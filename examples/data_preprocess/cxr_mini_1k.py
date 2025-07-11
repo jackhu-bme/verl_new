@@ -106,7 +106,8 @@ def convert_row(row: dict, split_name: str) -> dict:
     answer = "yes" if exists == "yes" else "no"
 
     # 关键：把 PIL Image 转成 bytes+meta dict
-    img_dict = image_to_bytes_dict(row["img_256_path"])
+    # just path now to avoid bugs
+    img_dict = {"image": "file://" + row["img_256_path"] }
     return {
         "data_source": "cxr_crop",
         "prompt": [

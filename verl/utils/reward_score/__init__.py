@@ -89,6 +89,10 @@ def default_compute_score(
         from . import geo3k
 
         res = geo3k.compute_score(solution_str, ground_truth)
+    elif data_source in ["cxr_crop"]:
+        from . import cxr
+        res = cxr.compute_score(solution_str, ground_truth)
+
     elif data_source in [
         "searchR1_nq",
         "searchR1_triviaqa",
