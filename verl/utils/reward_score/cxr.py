@@ -23,8 +23,14 @@ def is_consistent(predict_str: str, ground_truth: str) -> bool:
     # capital to lower
     predict_str = predict_str.lower()
     ground_truth = ground_truth.lower()
-    # Check if the predict_str contains the ground_truth in the beginning
-    return predict_str.startswith(ground_truth)
+    # print(f"^" * 20)
+    # print(f"pred str: {predict_str}")
+    # print(f"ground truth str: {ground_truth}")
+    # # Check if the predict_str contains the ground_truth in the beginning
+    # res = predict_str.startswith(ground_truth)
+    # print(f"Is consistent: {res}")
+    # print(f"^" * 20)
+    return res
 
 
 
@@ -37,8 +43,12 @@ def format_reward(predict_str: str) -> float:
 def acc_reward(predict_str: str, ground_truth: str, use_boxed: bool = True) -> float:
     if use_boxed:
         answer = extract_boxed_content(predict_str)
-    # else:
-    answer = predict_str
+        # print(f"-" * 20)
+        # print(f"Answer after extract: {answer}")
+        # print(f"Ground Truth: {ground_truth}")
+        # print(f"-" * 20)
+    else:
+        answer = predict_str
     return 1.0 if is_consistent(answer, ground_truth) else 0.0
 
 
