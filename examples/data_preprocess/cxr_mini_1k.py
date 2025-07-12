@@ -100,7 +100,8 @@ def convert_row(row: dict, split_name: str) -> dict:
     INSTRUCTION_FOLLOWING = (
         "You FIRST think about the reasoning process as an internal monologue and then provide the final answer. "
         "The reasoning process MUST BE enclosed within <think> </think> tags. "
-        "The final answer MUST BE put in \\boxed{}. Answer in English, using only 'yes' or 'no'."
+        "The final answer MUST BE put in \\boxed{}. Answer in English, using only 'yes' or 'no'. No other words. "
+        "Example: <think> I see signs of pneumonia in the lung fields. </think>. My answer: \\boxed{yes}"
     )
     prompt_text = question + " " + INSTRUCTION_FOLLOWING
     answer = "yes" if exists == "yes" else "no"
