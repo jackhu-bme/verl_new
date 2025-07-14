@@ -27,7 +27,7 @@ def is_consistent(predict_str: str, ground_truth: str) -> bool:
     # print(f"pred str: {predict_str}")
     # print(f"ground truth str: {ground_truth}")
     # # Check if the predict_str contains the ground_truth in the beginning
-    # res = predict_str.startswith(ground_truth)
+    res = predict_str.startswith(ground_truth)
     # print(f"Is consistent: {res}")
     # print(f"^" * 20)
     return res
