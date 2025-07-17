@@ -2,38 +2,34 @@ import argparse
 import os
 import pandas as pd
 from tqdm import tqdm
-from PIL import Image
-import io
 from functools import partial
 from concurrent.futures import ProcessPoolExecutor
-
 from verl.utils.hdfs_io import copy, makedirs
 
-
-import io
-import pyarrow as pa
-import pandas as pd
-from PIL import Image
-
-
+#todo: further check and refine!
 
 def convert_row(row: dict, split_name: str) -> dict:
     seed = row["seed"]
     disease = row["disease"]
     exists = str(row["exists"]).strip().lower()
-    question = f"Here is the X-ray of a single patient <image>. You are a experienced radiologist. Does this patient have {disease}?"
+    question = f"Here is the X-ray of a single patient <image>. You are an experienced radiologist. Does this patient have {disease}?"
     INSTRUCTION_FOLLOWING = (
         "You FIRST think about the reasoning process as an internal monologue and then provide the final answer. "
         "The reasoning process MUST BE enclosed within <think> </think> tags. "
-        "The final answer MUST BE put in \\boxed{}. Answer in English, using only 'yes' or 'no'. No other words. "
+        "The final answer MUST be put in \\boxed{}. Answer in English, using only 'yes' or 'no'. No other words. "
         "Example: <think> I see signs of pneumonia in the lung fields. </think>. My answer: \\boxed{yes}"
     )
     prompt_text = question + " " + INSTRUCTION_FOLLOWING
     answer = "yes" if exists == "yes" else "no"
 
-    # 关键：把 PIL Image 转成 bytes+meta dict
-    # just path now to avoid bugs
     img_dict = {"image": "file://" + row["img_256_path"] }
+
+    tool_kwargs = {
+        "crop_tool": {
+            "create_kwargs": {"image_path": row["img_256_path"]},
+        }
+    }
+
     return {
         "data_source": "cxr_crop",
         "prompt": [
@@ -49,9 +45,9 @@ def convert_row(row: dict, split_name: str) -> dict:
             "question": question,
             "disease": disease,
             "dicom_id": row["dicom_id"],
+            "tools_kwargs": tool_kwargs,  # Attach tool kwargs here
         },
     }
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -90,10 +86,6 @@ if __name__ == "__main__":
         # Multiprocessing pool
         converter = partial(convert_row, split_name=split_name)
         split_data = []
-        # for item in tqdm(records):
-        #     res = converter(item)
-        #     split_data.append(res)
-        #     break  # debug only
         with ProcessPoolExecutor(max_workers=args.num_proc) as executor:
             for item in tqdm(
                 executor.map(converter, records, chunksize=8),

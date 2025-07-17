@@ -1,0 +1,4 @@
+interaction:
+  - name: "gsm8k"
+    class_name: "verl.interactions.cxr1k_interaction.Cxr1kInteraction"
+    config: {}
