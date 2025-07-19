@@ -12,23 +12,21 @@ def convert_row(row: dict, split_name: str) -> dict:
     seed = row["seed"]
     disease = row["disease"]
     exists = str(row["exists"]).strip().lower()
-    question = f"Here is the X-ray of a single patient <image>. You are an experienced radiologist. Does this patient have {disease}?"
+    question = f"Here is the X-ray of a single patient <image> of image index {seed}. You are an experienced radiologist. Does this patient have {disease}?"
     INSTRUCTION_FOLLOWING = (
-        "You FIRST think about the reasoning process as an internal monologue and then provide the final answer. "
+        "You should answer in two steps: 1) First, conduct only one time tool_call of crop_image (need to pass the image index and crop coordinates, follow the format provided later)"
+        "to get a clearer view of x-ray."
+        "2) Second, Based on the original image and crooped image, think about the reasoning process as an internal monologue and then provide the final answer. "
         "The reasoning process MUST BE enclosed within <think> </think> tags. "
         "The final answer MUST be put in \\boxed{}. Answer in English, using only 'yes' or 'no'. No other words. "
-        "Example: <think> I see signs of pneumonia in the lung fields. </think>. My answer: \\boxed{yes}"
+        "Example for image index -1: <tool_call>{\"name\": \"crop_image\", \"arguments\":{\"index\": -1, \"coordinates\": \"[100, 200, 120, 230]\"}}</tool_call>"
+        "<think> I see signs of pneumonia in the lung fields. </think>. My answer: \\boxed{yes}"
     )
     prompt_text = question + " " + INSTRUCTION_FOLLOWING
     answer = "yes" if exists == "yes" else "no"
 
     img_dict = {"image": "file://" + row["img_256_path"] }
 
-    tool_kwargs = {
-        "crop_tool": {
-            "create_kwargs": {"image_path": row["img_256_path"]},
-        }
-    }
 
     return {
         "data_source": "cxr_crop",
@@ -42,10 +40,8 @@ def convert_row(row: dict, split_name: str) -> dict:
             "split": split_name,
             "index": seed,
             "answer": answer,
-            "question": question,
             "disease": disease,
             "dicom_id": row["dicom_id"],
-            "tools_kwargs": tool_kwargs,  # Attach tool kwargs here
         },
     }
 
@@ -54,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument("--full_parquet", default="/home/aiscuser/verl_new/cxr_mini_crop/full.parquet")
     parser.add_argument("--train_parquet", default="/home/aiscuser/verl_new/cxr_mini_crop/train.parquet")
     parser.add_argument("--test_parquet", default="/home/aiscuser/verl_new/cxr_mini_crop/test.parquet")
-    parser.add_argument("--local_dir", default="~/data/cxr_mini")
+    parser.add_argument("--local_dir", default="~/data/cxr_mini_tool")
     parser.add_argument("--hdfs_dir", default=None)
     parser.add_argument("--num_proc", type=int, default=os.cpu_count() // 2,
                         help="Number of parallel processes for image encoding")

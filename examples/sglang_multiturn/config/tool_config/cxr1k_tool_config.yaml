@@ -5,12 +5,20 @@ tools:
     tool_schema:
       type: "function"
       function:
-        name: "crop_cxr1k_image"
-        description: "A tool for cropping a more detailed image for CXR1K dataset."
+        name: "crop_image"
+        description: "A tool for cropping a more local detailed image for X-ray scans."
         parameters:
           type: "object"
           properties:
-            answer:
+            index:
               type: "string"
-              description: "The model's answer to cropping the CXR1K image, must be a string in the format 'x1,y1,x2,y2' where (x1,y1) is the top-left corner and (x2,y2) is the bottom-right corner of the crop area."
-          required: ["answer"]
+              description: "The index of the CXR1K image to crop, starting from 0. Passed in as a string."
+            coordinates:
+              type: "string"
+              description: "The model's answer of coordinates to cropping the CXR1K image, must be a string in the format '[x1,y1,x2,y2]' where (x1,y1) is the top-left corner and (x2,y2) is the bottom-right corner of the crop area."
+          required: ["index", "coordinates"]
+    full_parquet_path: "./cxr_mini_crop/full.parquet"
+    
+
+
+    # coordinates\": \"[100, 200, 120, 230]\"}

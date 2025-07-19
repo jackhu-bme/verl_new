@@ -13,12 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pandas as pd
+
 import logging
 import os
 from typing import Any, Optional, Tuple
 from uuid import uuid4
 
-from verl.utils.reward_score import gsm8k
+# from verl.utils.reward_score import gsm8k
 from verl.utils.rollout_trace import rollout_trace_op
 
 from .base_tool import BaseTool
@@ -27,9 +29,13 @@ from .schemas import OpenAIFunctionToolSchema
 logger = logging.getLogger(__name__)
 logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
+# example tool call process in vlm outputs:
+
+# <tool_call>{"name": "crop_image", "arguments":{"index": -1, "coordinates": "[100, 200, 120, 230]"}} </tool_call>
+
 
 class Cxr1kTool(BaseTool):
-    """A demo tool for calculating the reward of gsm8k.
+    """A demo tool for calculating the reward of cxr1k.
 
     - `to_openai_function_tool_schema`: return the tool schema in OpenAI format.
     - `create`: create a tool instance for a trajectory.
@@ -38,47 +44,30 @@ class Cxr1kTool(BaseTool):
     - `release`: release the tool instance.
     """
 
-    def __init__(self, config: dict, tool_schema: OpenAIFunctionToolSchema):
-        """
-        # _tool_schema = OpenAIFunctionToolSchema.model_validate({
-        #     "type": "function",
-        #     "function": {
-        #         "name": "calc_gsm8k_reward",
-        #         "description": "A tool for calculating the reward of gsm8k",
-        #         "parameters": {
-        #             "type": "object",
-        #             "properties": {
-        #                 "answer": {
-        #                     "type": "string",
-        #                     "description": "The answer to the question",
-        #                 },
-        #             },
-        #             "required": ["answer"],
-        #         },
-        #     }
-        # })
-        """
+    def __init__(self, config: dict, tool_schema: OpenAIFunctionToolSchema, full_parquet_path="./cxr_mini_crop/full.parquet"):
         super().__init__(config, tool_schema)
         self._instance_dict = {}
+        self.full_info = pd.read_parquet(full_parquet_path)
+
 
     def get_openai_tool_schema(self) -> OpenAIFunctionToolSchema:
         return self.tool_schema
 
-    async def create(self, instance_id: Optional[str] = None, ground_truth: Optional[str] = None, **kwargs) -> str:
+    async def create(self, instance_id: Optional[str] = None, **kwargs) -> str:
         if instance_id is None:
             instance_id = str(uuid4())
         self._instance_dict[instance_id] = {
             "response": "",
-            "ground_truth": ground_truth,
-            "reward": 0.0,
         }
         return instance_id
 
     @rollout_trace_op
     async def execute(self, instance_id: str, parameters: dict[str, Any], **kwargs) -> Tuple[str, float, dict]:
-        answer = parameters.get("answer", "")
-        if not isinstance(answer, str):
-            answer = str(answer)
+        index = parameters.get("index", "")
+        if not isinstance(index, str):
+            index = str(index)
+        
+        current_info = self.full_info[self.full_info['seed'] == index]
 
         if answer.startswith("#### "):
             self._instance_dict[instance_id]["response"] = answer
