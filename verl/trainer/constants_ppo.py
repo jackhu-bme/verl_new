@@ -18,6 +18,6 @@ PPO_RAY_RUNTIME_ENV = {
         "NCCL_DEBUG": "WARN",
         "VLLM_LOGGING_LEVEL": "WARN",
         "VLLM_ALLOW_RUNTIME_LORA_UPDATING": "true",
-        "RAY_DEBUG": "1", # TODO: cancel this after debug finished
+        # "RAY_DEBUG": "1", # TODO: cancel this after debug finished
     },
 }
