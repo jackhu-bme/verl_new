@@ -70,35 +70,50 @@ class Cxr1kTool(BaseTool):
     @rollout_trace_op
     async def execute(self, instance_id: str, parameters: dict[str, Any], **kwargs) -> Tuple[str, float, dict]:
         
-        breakpoint()
+        # breakpoint()
 
-        index = parameters.get("index", "")
-        if not isinstance(index, int):
-            index = int(index)
-        
-        current_info = self.full_info[self.full_info['seed'] == index]
-        # img_256_path = current_info["img_256_path"].iloc[0]
-        img_original_path = current_info["img_original_path"].iloc[0]
+        basic_instructions = """format: <think>'your reason'</think>\\boxed{'your answer'}. 
+To note, 'your reason' is your thinking steps for diagnosis.
+'your answer' is only 'yes' or 'no', means whether the disease exists."""
 
-        coordinates = parameters.get("coordinates", None)
+        try:
+            index = parameters.get("index", "")
+            if not isinstance(index, int):
+                index = int(index)
+            
+            current_info = self.full_info[self.full_info['seed'] == index]
+            # img_256_path = current_info["img_256_path"].iloc[0]
+            disease = current_info["disease"].iloc[0]
 
-        # m = re.search(r"[(\d+),(\d+),(\d+),(\d+)]", coordinates)
+            img_original_path = current_info["img_original_path"].iloc[0]
 
-        # x1, y1, x2, y2 = map(int, m.groups())
+            coordinates = parameters.get("coordinates", None)
 
-        crop_coords = coordinates
+            # m = re.search(r"[(\d+),(\d+),(\d+),(\d+)]", coordinates)
 
-        orig = Image.open(img_original_path).convert("RGB")
-        # img_256 = Image.open(img_256_path).convert("RGB")
-        fx, fy, fx2, fy2 = (
-            crop_coords[i] * orig.size[i % 2] // 256
-            for i in range(4)
-        )
-        crop_full = orig.crop((fx, fy, fx2, fy2))
-        # resize cropped img to 256
-        crop_256 = process_image(crop_full.resize((256, 256), resample=Image.LANCZOS))
+            # x1, y1, x2, y2 = map(int, m.groups())
 
-        return {"image": [crop_256, ], "text": f"<image> is the cropped region. Based on the full resolution image and cropped image, start your thinking then answer."}, 0.0, {}
+            crop_coords = [int(coord) for coord in coordinates] # tolerate more cases
+
+            orig = Image.open(img_original_path).convert("RGB")
+            # img_256 = Image.open(img_256_path).convert("RGB")
+            fx, fy, fx2, fy2 = (
+                crop_coords[i] * orig.size[i % 2] // 256
+                for i in range(4)
+            )
+            crop_full = orig.crop((fx, fy, fx2, fy2))
+            # resize cropped img to 256
+            crop_256 = process_image(crop_full.resize((256, 256), resample=Image.LANCZOS))
+        except Exception as e:
+            return {"image": [], "text": 
+                    "You failed to correctly use the tool. But forget about this, just use the original full view image, start your thinking then answer." + basic_instructions
+                    + f"Now, think then answer: based on both images, does {disease} exists in this patient, as shown in the X-ray?"}, 0.0, {}
+        return {"image": [crop_256, ],
+                 "text": 
+                 """Here are the tool_call results. You successfully used the crop tool! Now <image> is the cropped region, start [stage 2] now.
+Based on the full view image and cropped region image with a clearer view, start your thinking then answer.""" + basic_instructions
+                 + f"Now, think then answer: based on both images, does {disease} exists in this patient, as shown in the X-ray?"
+                }, 0.0, {}
 
 
     async def calc_reward(self, instance_id: str, **kwargs) -> float:

@@ -14,9 +14,9 @@ def convert_row(row: dict, split_name: str) -> dict:
     exists = str(row["exists"]).strip().lower()
     question = f"Here is the X-ray of a single patient <image> of image index {seed}. Does this patient have {disease}?"
     INSTRUCTION_FOLLOWING = (
-       """Now only conduct the stage 1 step, you need to do the tool_call by returning a json object with the function name and arguments within <tool_call><tool_call> XML tags:
+       """Now only conduct the [stage 1] step, you need to do the tool_call by returning a json object with the function name and arguments within <tool_call><tool_call> XML tags:
        <tool_call>\n{"name": <function-name>, "arguments": <args-json-object>}\n<tool_call>.
-       After this, wait for the tool_call results."""
+       After this, wait for the tool_call results. More instructions of stage 2 will be provided in tool_call results. Follow them only after you finish stage 1 and recieve the tool_call results."""
     )
     prompt_text = question + " " + INSTRUCTION_FOLLOWING
     answer = "yes" if exists == "yes" else "no"
