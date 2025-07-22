@@ -43,12 +43,12 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='cxr1k_async_rl_3b' \
-    trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_debug' \
+    trainer.project_name='cxr1k_async_rl_3b_formal_v1' \
+    trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_formal_v1' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
-    trainer.save_freq=-1 \
-    trainer.test_freq=2 \
+    trainer.save_freq=80 \
+    trainer.test_freq=20 \
     trainer.total_epochs=15 \
     actor_rollout_ref.actor.ppo_max_token_len_per_gpu=8192 \
     actor_rollout_ref.rollout.log_prob_max_token_len_per_gpu=8192 \

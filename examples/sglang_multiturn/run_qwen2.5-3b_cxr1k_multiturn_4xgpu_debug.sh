@@ -47,7 +47,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_debug' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
-    trainer.save_freq=-1 \
+    trainer.save_freq=1 \
     trainer.test_freq=1 \
     trainer.total_epochs=15 \
     actor_rollout_ref.actor.ppo_max_token_len_per_gpu=8192 \

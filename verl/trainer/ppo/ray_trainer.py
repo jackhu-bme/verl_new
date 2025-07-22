@@ -341,6 +341,7 @@ class RayPPOTrainer:
         self.tokenizer = tokenizer
         self.processor = processor
         self.config = config
+        # breakpoint()
         self.reward_fn = reward_fn
         self.val_reward_fn = val_reward_fn
 

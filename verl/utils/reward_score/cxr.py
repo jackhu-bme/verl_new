@@ -29,8 +29,11 @@ def is_consistent(predict_str: str, ground_truth: str) -> bool:
 
 
 def format_reward(predict_str: str) -> float:
-    pattern = re.compile(r"<think>.*</think>.*\\boxed\{.*\}.*", re.DOTALL)
-    match_result = re.fullmatch(pattern, predict_str)
+    # pattern_one = re.compile(r"<think>.*</think>", re.DOTALL)
+    # match_one = re.fullmatch(pattern_one, predict_str)
+    match_two = re.search(r"\\boxed\{(.*?)\}", predict_str, re.DOTALL)
+    # match_result = (match_one is not None) and (match_two is not None)
+    match_result = (match_two is not None)
     return 1.0 if match_result else 0.0
 
 
@@ -45,8 +48,22 @@ def acc_reward(predict_str: str, ground_truth: str, use_boxed: bool = True) -> f
         answer = predict_str
     return 1.0 if is_consistent(answer, ground_truth) else 0.0
 
+# import re
 
-def compute_score(predict_str: str, ground_truth: str, use_boxed: bool = True, format_score: float = 0.1) -> float:
-    return (1.0 - format_score) * acc_reward(predict_str, ground_truth, use_boxed) + format_score * format_reward(
-        predict_str
-    )
+def tool_reward(predict_str: str) -> float:
+    tool_success_tag = "You successfully used the crop tool!"
+    matches = re.findall(re.escape(tool_success_tag), predict_str)
+
+    if len(matches) == 1:
+        return 1.0
+    elif len(matches) > 1:
+        return 0.5
+    else:
+        return 0.0
+
+
+def compute_score(predict_str: str, ground_truth: str, use_boxed: bool = True, format_score: float = 0.1, tool_score: float = 0.4) -> float:
+    tool_r = tool_reward(predict_str)
+    acc_r = acc_reward(predict_str, ground_truth, use_boxed)
+    format_r = format_reward(predict_str)
+    return (1.0 - format_score - tool_score) * acc_r + format_score * format_r + tool_score * tool_r

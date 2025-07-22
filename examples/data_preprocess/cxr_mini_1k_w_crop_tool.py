@@ -30,7 +30,7 @@ def convert_row(row: dict, split_name: str) -> dict:
                 "content": "You are an experienced radiologist. You are given a question and you need to solve it step by step. "
                             "Reasoning step by step before any tool call. "
                             "You should answer in two steps: 1) [stage 1] First, conduct only one time tool_call of crop_image (need to pass the image index and crop coordinates, follow the format provided later)"
-                            "to get a clearer view of x-ray."
+                            f"to get a clearer view of x-ray. Do not repeat the coordinates in example, make this cropping region related to your final diagnosis of disease: {disease}"
                             "2) [stage 2] Second, Based on the original image and crooped image, think about the reasoning process as an internal monologue and then provide the final answer. "
                             "The reasoning process MUST BE enclosed within <think> </think> tags. "
                             "The final answer MUST be put in \\boxed{}. Answer in English, using only 'yes' or 'no'. No other words. "
