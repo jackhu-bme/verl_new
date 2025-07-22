@@ -12,25 +12,33 @@ def convert_row(row: dict, split_name: str) -> dict:
     seed = row["seed"]
     disease = row["disease"]
     exists = str(row["exists"]).strip().lower()
-    question = f"Here is the X-ray of a single patient <image> of image index {seed}. You are an experienced radiologist. Does this patient have {disease}?"
+    question = f"Here is the X-ray of a single patient <image> of image index {seed}. Does this patient have {disease}?"
     INSTRUCTION_FOLLOWING = (
-        "You should answer in two steps: 1) First, conduct only one time tool_call of crop_image (need to pass the image index and crop coordinates, follow the format provided later)"
-        "to get a clearer view of x-ray."
-        "2) Second, Based on the original image and crooped image, think about the reasoning process as an internal monologue and then provide the final answer. "
-        "The reasoning process MUST BE enclosed within <think> </think> tags. "
-        "The final answer MUST be put in \\boxed{}. Answer in English, using only 'yes' or 'no'. No other words. "
-        "Example for image index -1: <tool_call>{\"name\": \"crop_image\", \"arguments\":{\"index\": -1, \"coordinates\": \"[100, 200, 120, 230]\"}}</tool_call>"
-        "<think> I see signs of pneumonia in the lung fields. </think>. My answer: \\boxed{yes}"
+       """Now only conduct the stage 1 step, you need to do the tool_call by returning a json object with the function name and arguments within <tool_call><tool_call> XML tags:
+       <tool_call>\n{"name": <function-name>, "arguments": <args-json-object>}\n<tool_call>.
+       After this, wait for the tool_call results."""
     )
     prompt_text = question + " " + INSTRUCTION_FOLLOWING
     answer = "yes" if exists == "yes" else "no"
 
     img_dict = {"image": "file://" + row["img_256_path"] }
 
-
     return {
         "data_source": "cxr_crop",
         "prompt": [
+            {   "role": "system", 
+                "content": "You are an experienced radiologist. You are given a question and you need to solve it step by step. "
+                            "Reasoning step by step before any tool call. "
+                            "You should answer in two steps: 1) [stage 1] First, conduct only one time tool_call of crop_image (need to pass the image index and crop coordinates, follow the format provided later)"
+                            "to get a clearer view of x-ray."
+                            "2) [stage 2] Second, Based on the original image and crooped image, think about the reasoning process as an internal monologue and then provide the final answer. "
+                            "The reasoning process MUST BE enclosed within <think> </think> tags. "
+                            "The final answer MUST be put in \\boxed{}. Answer in English, using only 'yes' or 'no'. No other words. "
+                            "Example whole process for image index -1: "
+                            "<tool_call>\n{'name': 'crop_image', 'arguments':{'index': -1, 'coordinates': '[100, 200, 120, 230]'}}</tool_call>"
+                            "then the tool call will give you some results and hints. After this, you say:"
+                            "<think>I see signs of pneumonia in the lung fields. </think>. My answer: \\boxed{yes}"
+            },
             {"role": "user", "content": prompt_text}
         ],
         "images": [img_dict],
@@ -40,10 +48,27 @@ def convert_row(row: dict, split_name: str) -> dict:
             "split": split_name,
             "index": seed,
             "answer": answer,
+            "need_tool_kwargs": True,
+            "tools_kwargs": {
+                "crop_image":{
+                    "create_kwargs": {"_dummy": None}
+                }
+            },
             "disease": disease,
             "dicom_id": row["dicom_id"],
         },
     }
+
+
+# "tools_kwargs": {
+#     "calc_gsm8k_reward": {
+#         "create_kwargs": {"ground_truth": solution},
+#         # "execute_kwargs": {},
+#         # "calc_reward_kwargs": {},
+#         # "release_kwargs": {},
+#     },
+# },
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

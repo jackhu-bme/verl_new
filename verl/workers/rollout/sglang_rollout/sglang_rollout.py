@@ -508,6 +508,7 @@ class SGLangRollout(BaseRollout):
                   The active parser instance responsible for extracting
                   structured tool calls from model outputs.
         """
+        # breakpoint()
         if config.multi_turn.tool_config_path is None:
             return [], {}, None, [], None
 
@@ -832,6 +833,7 @@ class SGLangRollout(BaseRollout):
         request_sampling_params.update(kwargs)
 
         while current_turns < self.config.multi_turn.max_assistant_turns:
+            # breakpoint()
             if _req.state == AsyncRolloutRequestStateEnum.PENDING:
                 await self._handle_pending_state(_req)
                 _req.state = AsyncRolloutRequestStateEnum.RUNNING
@@ -848,8 +850,6 @@ class SGLangRollout(BaseRollout):
                             for tool_call in parsed_tool_calls
                         ]
                     )
-                    for resp for resp, _, _ in tool_call_results:
-                        print(f"tool call results:{resp}")
                     _req.add_tool_response_messages(self.processing_class, [resp for resp, _, _ in tool_call_results])
                     for tool_call, (resp, reward, metrics) in zip(parsed_tool_calls, tool_call_results):
                         _req.update_metrics(metrics, tool_call.function.name)
@@ -866,7 +866,6 @@ class SGLangRollout(BaseRollout):
                 if len(_req.get_generation_prompt_ids(self.processing_class)) + 1 >= self.config.max_model_len:
                     finish_reason_type = FinishReasonTypeEnum.LENGTH
                     break
-
                 # Video support is not implemented yet
                 image_data = (
                     _req.multi_modal_data["image"]
@@ -1058,6 +1057,7 @@ class SGLangRollout(BaseRollout):
         do_sample = prompts.meta_info.get("do_sample", True)
         is_validate = prompts.meta_info.get("validate", False)
         tgt_device = prompts.batch["input_ids"].device
+        # breakpoint()
         if self._tp_rank == 0:
             req_list = self._preprocess_prompt_to_async_rollout_requests(
                 prompts,

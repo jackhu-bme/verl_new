@@ -20,11 +20,17 @@ import os
 from typing import Any, Optional, Tuple
 from uuid import uuid4
 
+import re
+
 # from verl.utils.reward_score import gsm8k
 from verl.utils.rollout_trace import rollout_trace_op
 
 from .base_tool import BaseTool
 from .schemas import OpenAIFunctionToolSchema
+
+from verl.utils.dataset.vision_utils import process_image
+
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
@@ -63,33 +69,40 @@ class Cxr1kTool(BaseTool):
 
     @rollout_trace_op
     async def execute(self, instance_id: str, parameters: dict[str, Any], **kwargs) -> Tuple[str, float, dict]:
+        
+        breakpoint()
+
         index = parameters.get("index", "")
-        if not isinstance(index, str):
-            index = str(index)
+        if not isinstance(index, int):
+            index = int(index)
         
         current_info = self.full_info[self.full_info['seed'] == index]
+        # img_256_path = current_info["img_256_path"].iloc[0]
+        img_original_path = current_info["img_original_path"].iloc[0]
 
-        if answer.startswith("#### "):
-            self._instance_dict[instance_id]["response"] = answer
-        else:
-            self._instance_dict[instance_id]["response"] = "#### " + answer
+        coordinates = parameters.get("coordinates", None)
 
-        reward = await self.calc_reward(instance_id)
-        # penalty for non improved answer submission
-        tool_reward = 0.0 if reward > self._instance_dict[instance_id]["reward"] else -0.05
-        # update the reward
-        self._instance_dict[instance_id]["reward"] = reward
+        # m = re.search(r"[(\d+),(\d+),(\d+),(\d+)]", coordinates)
 
-        return f"Current parsed {answer=} {reward=}", tool_reward, {}
+        # x1, y1, x2, y2 = map(int, m.groups())
+
+        crop_coords = coordinates
+
+        orig = Image.open(img_original_path).convert("RGB")
+        # img_256 = Image.open(img_256_path).convert("RGB")
+        fx, fy, fx2, fy2 = (
+            crop_coords[i] * orig.size[i % 2] // 256
+            for i in range(4)
+        )
+        crop_full = orig.crop((fx, fy, fx2, fy2))
+        # resize cropped img to 256
+        crop_256 = process_image(crop_full.resize((256, 256), resample=Image.LANCZOS))
+
+        return {"image": [crop_256, ], "text": f"<image> is the cropped region. Based on the full resolution image and cropped image, start your thinking then answer."}, 0.0, {}
+
 
     async def calc_reward(self, instance_id: str, **kwargs) -> float:
-        return gsm8k.compute_score(
-            self._instance_dict[instance_id]["response"],
-            self._instance_dict[instance_id]["ground_truth"],
-            method="flexible",
-            format_score=0.0,
-            score=1.0,
-        )
+        return 
 
     async def release(self, instance_id: str, **kwargs) -> None:
         del self._instance_dict[instance_id]
