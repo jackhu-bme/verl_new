@@ -43,8 +43,8 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='cxr1k_async_rl_3b_formal_v1.2' \
-    trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_formal_v1.2' \
+    trainer.project_name='cxr1k_async_rl_3b_formal_v1.3' \
+    trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_formal_v1.3' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=80 \
@@ -60,3 +60,5 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.multi_turn.tool_config_path="$PROJECT_DIR/examples/sglang_multiturn/config/tool_config/cxr1k_tool_config.yaml" \
     actor_rollout_ref.rollout.multi_turn.max_user_turns=1 \
     $@
+
+python train_nv.py
