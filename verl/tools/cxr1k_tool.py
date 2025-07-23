@@ -84,7 +84,10 @@ To note, 'your reason' is your thinking steps for diagnosis.
             current_info = self.full_info[self.full_info['seed'] == index]
             # img_256_path = current_info["img_256_path"].iloc[0]
             disease = current_info["disease"].iloc[0]
-
+        except Exception as e:
+            return {"image": [], "text": 
+                    "You failed to correctly use the tool without correct image index repetition. Stop Now."}, 0.0, {}
+        try:
             img_original_path = current_info["img_original_path"].iloc[0]
 
             coordinates = parameters.get("coordinates", None)
