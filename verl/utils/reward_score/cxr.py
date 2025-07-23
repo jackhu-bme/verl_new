@@ -65,5 +65,7 @@ def tool_reward(predict_str: str) -> float:
 def compute_score(predict_str: str, ground_truth: str, use_boxed: bool = True, format_score: float = 0.1, tool_score: float = 0.4) -> float:
     tool_r = tool_reward(predict_str)
     acc_r = acc_reward(predict_str, ground_truth, use_boxed)
+    if tool_r < 0.5:
+        acc_r = 0 # if no tool use, then no acc reward
     format_r = format_reward(predict_str)
     return (1.0 - format_score - tool_score) * acc_r + format_score * format_r + tool_score * tool_r

@@ -18,4 +18,7 @@ actor_rollout_ref:
     name: sglang
     multi_turn:
       enable: True
+      # tokenization_sanity_check_mode: "ignore_strippable"
       max_assistant_turns: 2
+
+            

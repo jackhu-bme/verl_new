@@ -109,8 +109,10 @@ To note, 'your reason' is your thinking steps for diagnosis.
             crop_256 = process_image(crop_full.resize((256, 256), resample=Image.LANCZOS))
         except Exception as e:
             return {"image": [], "text": 
-                    "You failed to correctly use the tool. But forget about this, just use the original full view image, start your thinking then answer." + basic_instructions
-                    + f"Now, think then answer: based on both images, does {disease} exists in this patient, as shown in the X-ray?"}, 0.0, {}
+                    "You failed to correctly use the tool without correct image index repetition. Stop Now."}, 0.0, {}
+            # return {"image": [], "text": 
+            #         "You failed to correctly use the tool. But forget about this, just use the original full view image, start your thinking then answer." + basic_instructions
+            #         + f"Now, think then answer: based on both images, does {disease} exists in this patient, as shown in the X-ray?"}, 0.0, {}
         return {"image": [crop_256, ],
                  "text": 
                  """Here are the tool_call results. You successfully used the crop tool! Now <image> is the cropped region, start [stage 2] now.
