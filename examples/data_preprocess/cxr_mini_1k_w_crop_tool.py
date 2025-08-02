@@ -72,9 +72,9 @@ def convert_row(row: dict, split_name: str) -> dict:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--full_parquet", default="/home/aiscuser/verl_new/cxr_mini_crop/full.parquet")
-    parser.add_argument("--train_parquet", default="/home/aiscuser/verl_new/cxr_mini_crop/train.parquet")
-    parser.add_argument("--test_parquet", default="/home/aiscuser/verl_new/cxr_mini_crop/test.parquet")
+    parser.add_argument("--full_parquet", default="~/verl_new/cxr_mini_crop/full.parquet")
+    parser.add_argument("--train_parquet", default="~/verl_new/cxr_mini_crop/train.parquet")
+    parser.add_argument("--test_parquet", default="~/verl_new/cxr_mini_crop/test.parquet")
     parser.add_argument("--local_dir", default="~/data/cxr_mini_tool")
     parser.add_argument("--hdfs_dir", default=None)
     parser.add_argument("--num_proc", type=int, default=os.cpu_count() // 2,
