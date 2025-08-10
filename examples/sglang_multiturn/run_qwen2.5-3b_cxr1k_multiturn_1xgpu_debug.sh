@@ -46,6 +46,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.project_name='cxr1k_async_rl_3b' \
     trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_debug' \
     trainer.n_gpus_per_node=1 \
+    trainer.val_before_train=False \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
     trainer.test_freq=1 \

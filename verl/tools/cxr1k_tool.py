@@ -30,6 +30,9 @@ from .schemas import OpenAIFunctionToolSchema
 
 from verl.utils.dataset.vision_utils import process_image
 
+import traceback
+
+
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -92,11 +95,18 @@ To note, 'your reason' is your thinking steps for diagnosis.
 
             coordinates = parameters.get("coordinates", None)
 
-            # m = re.search(r"[(\d+),(\d+),(\d+),(\d+)]", coordinates)
 
-            # x1, y1, x2, y2 = map(int, m.groups())
-
-            crop_coords = [int(coord) for coord in coordinates] # tolerate more cases
+            if isinstance(coordinates, str):
+                m = re.search(r"\[(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\]", coordinates)
+                # m = re.search(r"[(\d+),(\d+),(\d+),(\d+)]", coordinates)
+                x1, y1, x2, y2 = map(int, m.groups())
+                crop_coords = [x1, y1, x2, y2]
+            elif isinstance(coordinates, list) and len(coordinates) == 4:
+                crop_coords = [int(coord) for coord in coordinates] # tolerate more cases
+            else:
+                raise RuntimeError(
+                    f"Invalid coordinates format: {coordinates}. Expected a list of 4 integers."
+                )
 
             orig = Image.open(img_original_path).convert("RGB")
             # img_256 = Image.open(img_256_path).convert("RGB")
@@ -108,8 +118,16 @@ To note, 'your reason' is your thinking steps for diagnosis.
             # resize cropped img to 256
             crop_256 = process_image(crop_full.resize((256, 256), resample=Image.LANCZOS))
         except Exception as e:
-            return {"image": [], "text": 
-                    "You failed to correctly use the tool without correct image index repetition. Stop Now."}, 0.0, {}
+            # for debug only
+            tb_str = traceback.format_exc()  # 这个会返回完整traceback字符串
+            return {
+                "image": [], 
+                "text": f"You failed to correctly use the tool without correct image index repetition. Stop Now.\nError Details:\n{tb_str}"
+            }, 0.0, {}
+        # except Exception as e:
+        #     return {"image": [], "text": 
+        #             "You failed to correctly use the tool without correct image index repetition. Stop Now."}, 0.0, {}
+        # future version
             # return {"image": [], "text": 
             #         "You failed to correctly use the tool. But forget about this, just use the original full view image, start your thinking then answer." + basic_instructions
             #         + f"Now, think then answer: based on both images, does {disease} exists in this patient, as shown in the X-ray?"}, 0.0, {}
