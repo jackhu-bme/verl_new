@@ -832,6 +832,8 @@ class SGLangRollout(BaseRollout):
         # Update with any additional kwargs
         request_sampling_params.update(kwargs)
 
+        # breakpoint()
+
         while current_turns < self.config.multi_turn.max_assistant_turns:
             # breakpoint()
             if _req.state == AsyncRolloutRequestStateEnum.PENDING:

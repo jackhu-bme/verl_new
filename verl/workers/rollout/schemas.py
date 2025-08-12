@@ -393,6 +393,8 @@ class AsyncRolloutRequest(BaseModel):
         content: str,
         tool_calls: Optional[List[OpenAIFunctionToolCall]] = None,
     ) -> None:
+
+        # breakpoint()
         self.messages.append(Message(role="assistant", content=content, tool_calls=tool_calls))
 
         messages = [*BASE_CHAT_HISTORY, self.messages[-1]]
@@ -565,6 +567,8 @@ class AsyncRolloutRequest(BaseModel):
             self.loss_mask = self.loss_mask[..., : -self.generation_prompt_ids.shape[-1]]
 
         self.response_ids = self.input_ids[..., self.prompt_ids.shape[-1] :]
+
+        # breakpoint()
 
         if self.tokenization_sanity_check_mode != TokenizationSanityCheckModeEnum.DISABLE:
             # When there is a diff, we log the diffs with diff_surrounding_chars context

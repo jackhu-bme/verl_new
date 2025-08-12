@@ -30,13 +30,16 @@ def convert_row(row: dict, split_name: str) -> dict:
                 "content": "You are an experienced radiologist. You are given a question and you need to solve it step by step. "
                             "Reasoning step by step before any tool call. "
                             "You should answer in two steps: 1) [stage 1] First, conduct only one time tool_call of crop_image (need to pass the image index and crop coordinates, follow the format provided later)"
-                            f"to get a clearer view of x-ray. Make this only one cropping region related to your final diagnosis of disease: {disease}"
                             "2) [stage 2] Second, Based on the original image and crooped image, think about the reasoning process as an internal monologue and then provide the final answer. "
                             "The reasoning process MUST BE enclosed within <think> </think> tags. "
                             "The final answer MUST be put in \\boxed{}. Answer in English, using only 'yes' or 'no'. No other words. "
                             "Example whole process for image index -1: "
                             "<tool_call>\n{'name': 'crop_image', 'arguments':{'index': -1, 'coordinates': '[100, 200, 120, 230]'}}</tool_call>"
-                            "then the tool call will give you some results and hints. After this, you say:"
+                            f"you should repeat the image index: {seed} for the index parameter, or you fail totally."
+                            "then the coordniates should be in the format of [x1, y1, x2, y2] where (x1, y1) is the top-left corner and (x2, y2) is the bottom-right corner. "
+                            "the croppind region is based on your coorinates of the original image, "
+                            f"To get a clearer view of x-ray, make this only one cropping region related to your final diagnosis of disease: {disease}. "
+                            "then the tool call will give you some results and hints. Only after this, you can say:"
                             "<think>I see signs of pneumonia in the lung fields. </think>. My answer: \\boxed{yes}"
             },
             {"role": "user", "content": prompt_text}

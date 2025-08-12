@@ -103,6 +103,8 @@ ENV/
 # Rope project settings
 .ropeproject
 
+*.deb
+
 # vscode
 .vscode
 

@@ -12,8 +12,12 @@ data:
   train_batch_size: 16
   return_raw_chat: True
 
+# 4.0.6
+
 actor_rollout_ref:
   hybrid_engine: True
+  model:
+    custom_chat_template: "{% set image_count = namespace(value=0) %}\n{% set video_count = namespace(value=0) %}\n\n{% for message in messages %}\n  {% if loop.first and message.role != 'system' %}\n<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n  {% endif %}\n\n  {% if message.role == 'assistant' and message.tool_calls %}\n<|im_start|>assistant{% if message.content %} {{ message.content }}{% endif %}\n  {% for tool_call in message.tool_calls %}\n    {% if tool_call.function is defined %}\n      {% set tc = tool_call.function %}\n    {% else %}\n      {% set tc = tool_call %}\n    {% endif %}\n<tool_call>\n{\"name\": \"{{ tc.name }}\", \"arguments\": {{ tc.arguments | tojson }}}\n</tool_call>\n  {% endfor %}\n<|im_end|>\n\n  {% else %}\n<|im_start|>{{ message.role }}\n  {% if message.content is string %}\n{{ message.content }}<|im_end|>\n  {% else %}\n    {% for content in message.content %}\n      {% if content.type == 'image' or 'image' in content or 'image_url' in content %}\n        {% set image_count.value = image_count.value + 1 %}\n        {% if add_vision_id %}Picture {{ image_count.value }}:{% endif %}\n<|vision_start|><|image_pad|><|vision_end|>\n      {% elif content.type == 'video' or 'video' in content %}\n        {% set video_count.value = video_count.value + 1 %}\n        {% if add_vision_id %}Video {{ video_count.value }}:{% endif %}\n<|vision_start|><|video_pad|><|vision_end|>\n      {% elif 'text' in content %}\n{{ content.text }}\n      {% endif %}\n    {% endfor %}\n<|im_end|>\n  {% endif %}\n  {% endif %}\n\n{% endfor %}\n\n{% if add_generation_prompt %}\n<|im_start|>assistant\n{% endif %}"
   rollout:
     name: sglang
     multi_turn:
@@ -21,4 +25,7 @@ actor_rollout_ref:
       # tokenization_sanity_check_mode: "ignore_strippable"
       max_assistant_turns: 2
 
-            
+# 4.0.5
+# model:
+#   custom_chat_template: "{% set image_count = namespace(value=0) %}\n{% set video_count = namespace(value=0) %}\n\n{% for message in messages %}\n  {% if loop.first and message.role != 'system' %}\n<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n  {% endif %}\n\n  {% if message.role == 'assistant' and message.tool_calls %}\n<|im_start|>assistant\n  {% if message.content is string %}\n{{ message.content }}\n  {% elif message.content %}\n{{ message.content }}\n  {% endif %}\n  {% for tool_call in message.tool_calls %}\n    {% if tool_call.function is defined %}\n      {% set tc = tool_call.function %}\n    {% else %}\n      {% set tc = tool_call %}\n    {% endif %}\n<tool_call>\n{\"name\": \"{{ tc.name }}\", \"arguments\": {{ tc.arguments | tojson }}}\n</tool_call>\n  {% endfor %}\n<|im_end|>\n\n  {% else %}\n<|im_start|>{{ message.role }}\n  {% if message.content is string %}\n{{ message.content }}<|im_end|>\n  {% else %}\n    {% for content in message.content %}\n      {% if content.type == 'image' or 'image' in content or 'image_url' in content %}\n        {% set image_count.value = image_count.value + 1 %}\n        {% if add_vision_id %}Picture {{ image_count.value }}:{% endif %}\n<|vision_start|><|image_pad|><|vision_end|>\n      {% elif content.type == 'video' or 'video' in content %}\n        {% set video_count.value = video_count.value + 1 %}\n        {% if add_vision_id %}Video {{ video_count.value }}:{% endif %}\n<|vision_start|><|video_pad|><|vision_end|>\n      {% elif 'text' in content %}\n{{ content.text }}\n      {% endif %}\n    {% endfor %}\n<|im_end|>\n  {% endif %}\n  {% endif %}\n\n{% endfor %}\n\n{% if add_generation_prompt %}\n<|im_start|>assistant\n{% endif %}"
+  
