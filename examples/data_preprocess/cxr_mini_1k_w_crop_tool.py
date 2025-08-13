@@ -75,6 +75,14 @@ def convert_row(row: dict, split_name: str) -> dict:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    # local
+    # parser.add_argument("--full_parquet", default="~/verl_new/cxr_mini_crop/full.parquet")
+    # parser.add_argument("--train_parquet", default="~/verl_new/cxr_mini_crop/train.parquet")
+    # parser.add_argument("--test_parquet", default="~/verl_new/cxr_mini_crop/test.parquet")
+    # hpc
+
+    # cp -r /mnt/input/ms_cxr_data/cxr_mini_crop/* ~/verl_new/cxr_mini_crop/
+
     parser.add_argument("--full_parquet", default="~/verl_new/cxr_mini_crop/full.parquet")
     parser.add_argument("--train_parquet", default="~/verl_new/cxr_mini_crop/train.parquet")
     parser.add_argument("--test_parquet", default="~/verl_new/cxr_mini_crop/test.parquet")
