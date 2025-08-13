@@ -27,7 +27,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.ppo_mini_batch_size=16 \
     actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=4 \
     actor_rollout_ref.actor.use_kl_loss=True \
-    actor_rollout_ref.actor.kl_loss_coef=0.001 \
+    actor_rollout_ref.actor.kl_loss_coef=0.0001 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
     actor_rollout_ref.actor.entropy_coeff=0 \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
@@ -44,8 +44,8 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='cxr1k_async_rl_3b_v4.0.8' \
-    trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_v4.0.8' \
+    trainer.project_name='cxr1k_async_rl_3b_v4.0.9_low_kl_1e-4' \
+    trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_v4.0.9_low_kl_1e-4' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=80 \
