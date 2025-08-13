@@ -44,8 +44,8 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='cxr1k_async_rl_3b_v4.0.9_low_kl_1e-4' \
-    trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_v4.0.9_low_kl_1e-4' \
+    trainer.project_name='cxr1k_async_rl_3b_v4.1.0_low_kl_1e-4' \
+    trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_v4.1.0_low_kl_1e-4' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=80 \
