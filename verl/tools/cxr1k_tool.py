@@ -53,7 +53,7 @@ class Cxr1kTool(BaseTool):
     - `release`: release the tool instance.
     """
 
-    def __init__(self, config: dict, tool_schema: OpenAIFunctionToolSchema, full_parquet_path="./cxr_mini_crop/full.parquet"):
+    def __init__(self, config: dict, tool_schema: OpenAIFunctionToolSchema, full_parquet_path="./cxr_data_process/ms_cxr_data/full.parquet"):
         super().__init__(config, tool_schema)
         self._instance_dict = {}
         self.full_info = pd.read_parquet(full_parquet_path)
@@ -95,7 +95,6 @@ To note, 'your reason' is your thinking steps for diagnosis.
 
             coordinates = parameters.get("coordinates", None)
 
-
             if isinstance(coordinates, str):
                 m = re.search(r"\[(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\]", coordinates)
                 # m = re.search(r"[(\d+),(\d+),(\d+),(\d+)]", coordinates)
@@ -109,7 +108,6 @@ To note, 'your reason' is your thinking steps for diagnosis.
                 )
 
             orig = Image.open(img_original_path).convert("RGB")
-            # img_256 = Image.open(img_256_path).convert("RGB")
             fx, fy, fx2, fy2 = (
                 crop_coords[i] * orig.size[i % 2] // 256
                 for i in range(4)
