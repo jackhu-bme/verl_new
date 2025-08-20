@@ -15,6 +15,7 @@ python3 -m verl.trainer.main_ppo \
     --config-name='cxr1k_multiturn_grpo' \
     algorithm.adv_estimator=grpo \
     data.train_batch_size=4 \
+    data.dataloader_num_workers=16 \
     data.max_prompt_length=1024 \
     data.max_response_length=1536 \
     data.filter_overlong_prompts=True \
@@ -44,8 +45,8 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='cxr10k_async_rl_7b_v4.3.0_low_kl_1e-3_debug' \
-    trainer.experiment_name='qwen2.5-vl_7b_-cxr10k_v4.3.0_low_kl_1e-3_debug' \
+    trainer.project_name='cxr10k_async_rl_7b_v4.3.3_low_kl_1e-3_debug' \
+    trainer.experiment_name='qwen2.5-vl_7b_-cxr10k_v4.3.3_low_kl_1e-3_debug' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=80 \

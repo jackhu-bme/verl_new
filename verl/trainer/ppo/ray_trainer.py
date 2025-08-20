@@ -18,6 +18,8 @@ FSDP PPO Trainer with Ray-based single controller.
 This trainer supports model-agonistic model initialization with huggingface
 """
 
+import re
+
 import json
 import os
 import uuid
@@ -148,6 +150,49 @@ class ResourcePoolManager:
                     f"Resource pool {resource_pool_name}: {num_gpus}*{num_nodes}"
                     + "cannot be satisfied in this ray cluster"
                 )
+
+
+# code for matrix logging
+
+import math
+
+def safe_div(a, b):
+    return a / b if b else float('nan')
+
+def compute_strict_metrics(disease_counts, disease_list):
+    """
+    disease_counts[idx] 形状 2 x 3
+      行 0 GT=YES -> [TP, FN_no, FN_oth]
+      行 1 GT=NO  -> [FP, TN,    TN_oth]
+    """
+    results = {}
+
+    for idx, disease in enumerate(disease_list):
+        dc = disease_counts[idx]
+        TP, FN_no, FN_oth = dc[0]
+        FP, TN, TN_oth   = dc[1]
+
+        # 严格：把 other 当错误
+        pos_total = TP + FN_no + FN_oth
+        neg_total = FP + TN + TN_oth
+        N = pos_total + neg_total
+
+        acc = safe_div(TP + TN, N)
+        sens = safe_div(TP, pos_total)        # Sensitivity / Recall
+        spec = safe_div(TN, neg_total)        # Specificity
+        abstain = safe_div(FN_oth + TN_oth, N)  # 弃答率
+
+        results.update({
+            f"val-disease/{disease}/TP": TP, f"val-disease/{disease}/FN_no": FN_no, f"val-disease/{disease}/FN_oth": FN_oth,
+            f"val-disease/{disease}/FP": FP, f"val-disease/{disease}/TN": TN, f"val-disease/{disease}/TN_oth": TN_oth,
+            f"val-disease/{disease}/N": N,
+            f"val-disease/{disease}/acc": acc,
+            f"val-disease/{disease}/sensitivity": sens,
+            f"val-disease/{disease}/specificity": spec,
+            f"val-disease/{disease}/abstain_rate": abstain,
+        })
+
+    return results
 
 
 def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, kl_penalty="kl"):
@@ -698,6 +743,12 @@ class RayPPOTrainer:
         sample_scores = []
         sample_turns = []
 
+        # breakpoint()
+        
+        # TODO: this code can be optimized to auto find and create disease list
+        disease_list = ['Atelectasis', 'Cardiomegaly', 'Consolidation', 'Edema', 'Lung Opacity', 'Pleural Effusion', 'Pneumonia', 'Pneumothorax']
+        disease_counts = np.zeros((len(disease_list), 2, 3)) # 2 for groung_truth yes/no, 3 for answer yes/no/other
+
         for test_data in self.val_dataloader:
             test_batch = DataProto.from_single_dict(test_data)
 
@@ -759,6 +810,44 @@ class RayPPOTrainer:
 
             print("validation generation end")
 
+            assert len(test_gen_batch) == len(test_output_gen_batch)
+
+            for i in range(len(test_output_gen_batch)):
+                test_single = test_batch[i]
+                test_output_single = test_output_gen_batch[i]
+
+                gt = test_single.non_tensor_batch["reward_model"]["ground_truth"]
+                disease = test_single.non_tensor_batch["extra_info"]["disease"]
+                assert disease in disease_list, f"Unknown disease: {disease}"
+                index = disease_list.index(disease)
+                try:
+                    content = test_output_single.non_tensor_batch["messages"]["messages"][-1].content
+                    extracted_ans = re.findall(r'\\boxed\{(.*?)\}', content)[0]
+                except Exception as e:
+                    extracted_ans = "other"
+                if gt.lower() == "yes":
+                    if extracted_ans.lower() == "yes":
+                        disease_counts[index][0][0] += 1
+                    elif extracted_ans.lower() == "no":
+                        disease_counts[index][0][1] += 1
+                    else:
+                        disease_counts[index][0][2] += 1
+                elif gt.lower() == "no":
+                    if extracted_ans.lower() == "yes":
+                        disease_counts[index][1][0] += 1
+                    elif extracted_ans.lower() == "no":
+                        disease_counts[index][1][1] += 1
+                    else:
+                        disease_counts[index][1][2] += 1
+                else:
+                    print(f"Unknown ground truth: {gt}")
+                    raise ValueError(f"Unknown ground truth: {gt}")
+
+            print(f"disease_counts: {disease_counts}")
+
+            disease_metrics = compute_strict_metrics(disease_counts, disease_list)
+            
+            
             # Store generated outputs
             output_ids = test_output_gen_batch.batch["responses"]
             output_texts = [self.tokenizer.decode(ids, skip_special_tokens=True) for ids in output_ids]
@@ -806,6 +895,9 @@ class RayPPOTrainer:
 
         data_src2var2metric2val = process_validation_metrics(data_sources, sample_inputs, reward_extra_infos_dict)
         metric_dict = {}
+        # update the previous disease metrics
+        metric_dict.update(disease_metrics)
+
         for data_source, var2metric2val in data_src2var2metric2val.items():
             core_var = "acc" if "acc" in var2metric2val else "reward"
             for var_name, metric2val in var2metric2val.items():

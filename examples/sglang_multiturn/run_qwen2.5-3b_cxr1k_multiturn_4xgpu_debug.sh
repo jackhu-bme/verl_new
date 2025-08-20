@@ -44,14 +44,13 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='cxr1k_async_rl_3b_4.0.7' \
-    trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_debug_4.0.7' \
+    trainer.project_name='cxr1k_async_rl_3b_4.3.3' \
+    trainer.experiment_name='qwen2.5-vl_3b_-cxr1k_debug_4.3.3' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=100 \
     trainer.test_freq=10 \
     trainer.total_epochs=15 \
-    trainer.val_before_train=False \
     trainer.log_val_generations=10 \
     actor_rollout_ref.actor.ppo_max_token_len_per_gpu=8192 \
     actor_rollout_ref.rollout.log_prob_max_token_len_per_gpu=8192 \
