@@ -166,6 +166,15 @@ def compute_strict_metrics(disease_counts, disease_list):
       行 1 GT=NO  -> [FP, TN,    TN_oth]
     """
     results = {}
+    
+    mean_acc = 0.0
+    mean_prec = 0.0
+    mean_sens = 0.0
+    mean_spec = 0.0
+    mean_f1 = 0.0
+    mean_abstain = 0.0
+
+    n_diseases = len(disease_list)
 
     for idx, disease in enumerate(disease_list):
         dc = disease_counts[idx]
@@ -178,19 +187,41 @@ def compute_strict_metrics(disease_counts, disease_list):
         N = pos_total + neg_total
 
         acc = safe_div(TP + TN, N)
+        prec = safe_div(TP, TP + FP) if (TP + FP) > 0 else float('nan')  # Precision
         sens = safe_div(TP, pos_total)        # Sensitivity / Recall
         spec = safe_div(TN, neg_total)        # Specificity
         abstain = safe_div(FN_oth + TN_oth, N)  # 弃答率
+        f1 = safe_div(2 * prec * sens, (prec + sens)) if (prec + sens) > 0 else float('nan')  # F1 score
+
+        # Update mean metrics
+        mean_acc += acc / n_diseases
+        mean_prec += prec / n_diseases
+        mean_sens += sens / n_diseases
+        mean_spec += spec / n_diseases
+        mean_abstain += abstain / n_diseases
+        mean_f1 += f1 / n_diseases
 
         results.update({
             f"val-disease/{disease}/TP": TP, f"val-disease/{disease}/FN_no": FN_no, f"val-disease/{disease}/FN_oth": FN_oth,
             f"val-disease/{disease}/FP": FP, f"val-disease/{disease}/TN": TN, f"val-disease/{disease}/TN_oth": TN_oth,
             f"val-disease/{disease}/N": N,
             f"val-disease/{disease}/acc": acc,
+            f"val-disease/{disease}/precision": prec,
             f"val-disease/{disease}/sensitivity": sens,
             f"val-disease/{disease}/specificity": spec,
             f"val-disease/{disease}/abstain_rate": abstain,
+            f"val-disease/{disease}/f1": f1,
         })
+
+    # Add mean metrics
+    results.update({
+        "val-disease/mean_acc": mean_acc,
+        "val-disease/mean_precision": mean_prec,
+        "val-disease/mean_sensitivity": mean_sens,
+        "val-disease/mean_specificity": mean_spec,
+        "val-disease/mean_abstain_rate": mean_abstain,
+        "val-disease/mean_f1": mean_f1,
+    })
 
     return results
 
@@ -810,7 +841,11 @@ class RayPPOTrainer:
 
             print("validation generation end")
 
-            assert len(test_gen_batch) == len(test_output_gen_batch)
+
+            # Store generated outputs
+            output_ids = test_output_gen_batch.batch["responses"]
+            output_texts = [self.tokenizer.decode(ids, skip_special_tokens=True) for ids in output_ids]
+            sample_outputs.extend(output_texts)
 
             for i in range(len(test_output_gen_batch)):
                 test_single = test_batch[i]
@@ -821,8 +856,8 @@ class RayPPOTrainer:
                 assert disease in disease_list, f"Unknown disease: {disease}"
                 index = disease_list.index(disease)
                 try:
-                    content = test_output_single.non_tensor_batch["messages"]["messages"][-1].content
-                    extracted_ans = re.findall(r'\\boxed\{(.*?)\}', content)[0]
+                    content = output_texts[i]
+                    extracted_ans = re.findall(r'\\boxed\{(.*?)\}', content)[-1]
                 except Exception as e:
                     extracted_ans = "other"
                 if gt.lower() == "yes":
@@ -846,12 +881,6 @@ class RayPPOTrainer:
             print(f"disease_counts: {disease_counts}")
 
             disease_metrics = compute_strict_metrics(disease_counts, disease_list)
-            
-            
-            # Store generated outputs
-            output_ids = test_output_gen_batch.batch["responses"]
-            output_texts = [self.tokenizer.decode(ids, skip_special_tokens=True) for ids in output_ids]
-            sample_outputs.extend(output_texts)
 
             test_batch = test_batch.union(test_output_gen_batch)
             test_batch.meta_info["validate"] = True

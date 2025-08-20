@@ -35,7 +35,7 @@ def convert_row(row: dict, split_name: str) -> dict:
     # just path now to avoid bugs
     img_dict = {"image": "file://" + row["img_256_path"] }
     return {
-        "data_source": "cxr_crop",
+        "data_source": "cxr_ori_crop",
         "prompt": [
             {"role": "user", "content": prompt_text}
         ],
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--full_parquet", default="~/verl_new/cxr_mini_crop/full.parquet")
     parser.add_argument("--train_parquet", default="~/verl_new/cxr_mini_crop/train.parquet")
-    parser.add_argument("--test_parquet", default="~/cxr_mini_crop/test.parquet")
+    parser.add_argument("--test_parquet", default="~/verl_new/cxr_mini_crop/test.parquet")
     parser.add_argument("--local_dir", default="~/data/cxr_mini")
     parser.add_argument("--hdfs_dir", default=None)
     parser.add_argument("--num_proc", type=int, default=os.cpu_count() // 2,

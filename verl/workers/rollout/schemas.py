@@ -416,6 +416,7 @@ class AsyncRolloutRequest(BaseModel):
             return
         # We also handle the case when tool returns image
         # We require the processing of the image and video to be done at tool.execute() level
+        # breakpoint()
         delta_multi_modal_data = {key: [] for key in self.multi_modal_keys}
         for content in contents:
             if isinstance(content, dict):
