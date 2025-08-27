@@ -128,5 +128,3 @@ outputs
 .history
 
 cxr_data_process/ms_cxr_images/
-
-cxr_data_process/mimic_cxr_jpg_data/fold*

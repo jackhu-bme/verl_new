@@ -44,23 +44,24 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='cxr5k_tool_async_rl_7b_v6.0.1' \
-    trainer.experiment_name='qwen2.5-vl_tool_7b_-cxr5k_v6.0.1_change_prompt_bigger_rollout' \
+    trainer.project_name='cxr5k_tool_async_rl_7b_v6.0.10_debug' \
+    trainer.experiment_name='qwen2.5-vl_tool_7b_-cxr5k_v6.0.10_describe_debug' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=80 \
     trainer.test_freq=5 \
     trainer.total_epochs=15 \
-    trainer.log_val_generations=10 \
+    trainer.log_val_generations=20 \
     actor_rollout_ref.actor.ppo_max_token_len_per_gpu=8192 \
     actor_rollout_ref.rollout.log_prob_max_token_len_per_gpu=8192 \
     actor_rollout_ref.ref.log_prob_max_token_len_per_gpu=8192 \
     critic.ppo_max_token_len_per_gpu=8192 \
     critic.forward_max_token_len_per_gpu=8192 \
-    data.train_files=$HOME/data/cxr_5k_tool/train.parquet \
-    data.val_files=$HOME/data/cxr_5k_tool/test.parquet \
+    data.train_files=$HOME/data/cxr_5k_tool/train_debug_describe.parquet \
+    data.val_files=$HOME/data/cxr_5k_tool/test_debug_describe_fast.parquet \
     actor_rollout_ref.rollout.multi_turn.tool_config_path="$PROJECT_DIR/examples/sglang_multiturn/config/tool_config/cxr1k_tool_config.yaml" \
     actor_rollout_ref.rollout.multi_turn.max_user_turns=1 \
     $@
+
 
 python train_nv.py

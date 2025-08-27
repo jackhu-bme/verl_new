@@ -21,7 +21,7 @@ python3 -m verl.trainer.main_ppo \
     data.truncation='error' \
     data.return_raw_chat=True \
     data.return_multi_modal_inputs=False \
-    actor_rollout_ref.model.path=Qwen/Qwen2.5-VL-7B-Instruct \
+    actor_rollout_ref.model.path=Qwen/Qwen2.5-VL-3B-Instruct \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=16 \
@@ -44,12 +44,12 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='cxr5k_tool_async_rl_7b_v6.0.1' \
-    trainer.experiment_name='qwen2.5-vl_tool_7b_-cxr5k_v6.0.1_change_prompt_bigger_rollout' \
+    trainer.project_name='cxr5k_tool_async_rl_3b_v6.0.2' \
+    trainer.experiment_name='qwen2.5-vl_tool_3b_-cxr5k_v6.0.2_change_prompt_bigger_rollout_larger_acc_reward' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=80 \
-    trainer.test_freq=5 \
+    trainer.test_freq=10 \
     trainer.total_epochs=15 \
     trainer.log_val_generations=10 \
     actor_rollout_ref.actor.ppo_max_token_len_per_gpu=8192 \

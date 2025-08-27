@@ -32,6 +32,8 @@ from verl.utils.dataset.vision_utils import process_image
 
 import traceback
 
+import os
+
 
 from PIL import Image
 
@@ -129,12 +131,22 @@ To note, 'your reason' is your thinking steps for diagnosis.
             # return {"image": [], "text": 
             #         "You failed to correctly use the tool. But forget about this, just use the original full view image, start your thinking then answer." + basic_instructions
             #         + f"Now, think then answer: based on both images, does {disease} exists in this patient, as shown in the X-ray?"}, 0.0, {}
-        return {"image": [crop_256, ],
-                 "text": 
-                 """Here are the tool_call results. You successfully used the crop tool! Now <image> is the cropped region, start [stage 2] now.
-Based on the full view image and cropped region image with a clearer view, start your thinking then answer.""" + basic_instructions
-                 + f"Now, think then answer: based on both images, does {disease} exists in this patient, as shown in the X-ray?"
-                }, 0.0, {}
+        
+        debug = os.getenv("VERL_DEBUG", "0")
+        if debug != "1":
+            return {"image": [crop_256, ],
+                    "text": 
+                    """Here are the tool_call results. You successfully used the crop tool! Now <image> is the cropped region, start [stage 2] now.
+    Based on the full view image and cropped region image with a clearer view, start your thinking then answer.""" + basic_instructions
+                    + f"Now, think then answer: based on both images, does {disease} exists in this patient, as shown in the X-ray?"
+                    + "To note, the answer can be either yes or no. Now your goal is to accurately diagnose the disease."
+                    }, 0.0, {}
+        else:
+        # debug only
+            return {"image": [crop_256, ],
+                    "text": 
+                    """Seperately describe what you see in the original full view image and cropped region image, surrounded by <description>...</description>."""
+                    }, 0.0, {}
 
 
     async def calc_reward(self, instance_id: str, **kwargs) -> float:
