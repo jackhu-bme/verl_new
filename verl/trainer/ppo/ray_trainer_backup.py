@@ -1228,11 +1228,6 @@ class RayPPOTrainer:
         last_val_metrics = None
         self.max_steps_duration = 0
 
-        # for dynamic sampling accumulation
-        batch_accum = None
-        num_prompt_in_batch = 0
-        num_gen_batches = 0
-
         for epoch in range(self.config.trainer.total_epochs):
             for batch_dict in self.train_dataloader:
                 do_profile = (
@@ -1313,20 +1308,18 @@ class RayPPOTrainer:
                     batch = batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n, interleave=True)
                     batch = batch.union(gen_batch_output)
 
-                    # if "response_mask" not in batch.batch:
-                    #     batch.batch["response_mask"] = compute_response_mask(batch)
-
-
+                    if "response_mask" not in batch.batch:
+                        batch.batch["response_mask"] = compute_response_mask(batch)
                     # Balance the number of valid tokens across DP ranks.
                     # NOTE: This usually changes the order of data in the `batch`,
                     # which won't affect the advantage calculation (since it's based on uid),
                     # but might affect the loss calculation (due to the change of mini-batching).
                     # TODO: Decouple the DP balancing and mini-batching.
-                    # if self.config.trainer.balance_batch:
-                    #     self._balance_batch(batch, metrics=metrics)
+                    if self.config.trainer.balance_batch:
+                        self._balance_batch(batch, metrics=metrics)
 
                     # compute global_valid tokens
-                    # batch.meta_info["global_token_num"] = torch.sum(batch.batch["attention_mask"], dim=-1).tolist()
+                    batch.meta_info["global_token_num"] = torch.sum(batch.batch["attention_mask"], dim=-1).tolist()
 
                     with marked_timer("reward", timing_raw, color="yellow"):
                         # compute reward model score
@@ -1341,105 +1334,6 @@ class RayPPOTrainer:
                         else:
                             reward_tensor, reward_extra_infos_dict = compute_reward(batch, self.reward_fn)
 
-                    with marked_timer("adv_s1", timing_raw, color="brown"):
-                        # we combine with rule-based rm
-                        reward_extra_infos_dict: dict[str, list]
-                        if self.config.reward_model.launch_reward_fn_async:
-                            reward_tensor, reward_extra_infos_dict = ray.get(future_reward)
-                        batch.batch["token_level_scores"] = reward_tensor
-
-                        if reward_extra_infos_dict:
-                            batch.non_tensor_batch.update({k: np.array(v) for k, v in reward_extra_infos_dict.items()})
-
-                        # compute rewards. apply_kl_penalty if available
-                        if self.config.algorithm.use_kl_in_reward:
-                            batch, kl_metrics = apply_kl_penalty(
-                                batch, kl_ctrl=self.kl_ctrl_in_reward, kl_penalty=self.config.algorithm.kl_penalty
-                            )
-                            metrics.update(kl_metrics)
-                        else:
-                            batch.batch["token_level_rewards"] = batch.batch["token_level_scores"]
-                    
-                    # ===================== 🔧 动态采样 / 过滤开始 =====================
-                    do_filter = self.config.algorithm.get("filter_groups", {}).get("enable", False)
-                    if do_filter:
-                        metric_name = self.config.algorithm.filter_groups.metric  # "seq_final_reward" or "seq_reward"
-                        eps = 1e-8  # 建议的稳健阈值
-
-                        # 计算序列级 metric（numpy 便于聚合）
-                        if metric_name == "seq_final_reward":
-                            seq_metric = batch.batch["token_level_rewards"].sum(dim=-1).cpu().numpy()
-                        elif metric_name == "seq_reward":
-                            seq_metric = batch.batch["token_level_scores"].sum(dim=-1).cpu().numpy()
-                        else:
-                            raise ValueError(f"Unknown filter_groups.metric: {metric_name}")
-
-                        batch.non_tensor_batch[metric_name] = seq_metric
-
-                        # 按 uid(=prompt) 聚合
-                        prompt_uid2metric_vals = defaultdict(list)
-                        for uid, m in zip(batch.non_tensor_batch["uid"], batch.non_tensor_batch[metric_name]):
-                            prompt_uid2metric_vals[uid].append(m)
-
-                        # 只保留“同一 prompt 的多次生成里 metric 存在差异（std>eps）”或“当前仅 1 条生成”的 prompt
-                        kept_prompt_uids = []
-                        for uid, vals in prompt_uid2metric_vals.items():
-                            if (len(vals) == 1) or (np.std(vals) > eps):
-                                kept_prompt_uids.append(uid)
-
-                        # 根据保留的 prompt 过滤轨迹
-                        kept_traj_idxs = [i for i, uid in enumerate(batch.non_tensor_batch["uid"]) if uid in kept_prompt_uids]
-                        filtered_batch = batch[kept_traj_idxs]
-
-                        # 🔧 累计到池子里，按“prompt 个数”凑够再训练
-                        # 注意：用 set 统计本次新增的 prompt 个数
-                        new_prompt_uids = list(dict.fromkeys(filtered_batch.non_tensor_batch["uid"]))
-                        num_prompt_in_batch += len(new_prompt_uids)
-                        num_gen_batches += 1
-                        batch_accum = filtered_batch if batch_accum is None else DataProto.concat([batch_accum, filtered_batch])
-
-                        prompt_bsz = self.config.data.train_batch_size
-                        max_num_gen_batches = self.config.algorithm.filter_groups.get("max_num_gen_batches", 0)
-
-                        if num_prompt_in_batch < prompt_bsz:
-                            # 还没凑满 prompt_bsz：继续生成下一批
-                            if (max_num_gen_batches <= 0) or (num_gen_batches < max_num_gen_batches):
-                                # 与 dapo 行为保持一致：推进进度条 & 步数，然后继续
-                                progress_bar.update(1)
-                                self.global_steps += 1
-                                # 结束本轮，进入下个 dataloader batch 以继续生成
-                                # （注意：不做 old_log_prob/values/adv/update 等）
-                                if do_profile:
-                                    self.actor_rollout_wg.stop_profile()
-                                    if self.use_reference_policy: self.ref_policy_wg.stop_profile()
-                                    if self.use_critic: self.critic_wg.stop_profile()
-                                    if self.use_rm: self.rm_wg.stop_profile()
-                                continue
-                            else:
-                                raise ValueError(
-                                    f"num_gen_batches={num_gen_batches} >= max_num_gen_batches={max_num_gen_batches}. "
-                                    "Generated too many. Consider relaxing filter or increasing max_num_gen_batches."
-                                )
-                        else:
-                            # 🔧 凑够了：对齐轨迹数 = prompt_bsz * rollout.n
-                            traj_bsz = prompt_bsz * self.config.actor_rollout_ref.rollout.n
-                            batch = batch_accum[:traj_bsz]
-
-                            # 清空池子计数，为下一次循环做准备（放在真正完成该 step 的末尾也可以）
-                            batch_accum = None
-                            num_prompt_in_batch = 0
-                            num_gen_batches = 0
-                    # ===================== 🔧 动态采样 / 过滤结束 =====================
-
-                    # （如果未启用过滤，batch 保持原样继续）
-
-                    # 🔧 现在再做 response_mask / balance（放在过滤之后，确保最终 batch 上执行）
-                    if "response_mask" not in batch.batch:
-                        batch.batch["response_mask"] = compute_response_mask(batch)
-
-                    if self.config.trainer.balance_batch:
-                        self._balance_batch(batch, metrics=metrics)
-                    
                     # recompute old_log_probs
                     with marked_timer("old_log_prob", timing_raw, color="blue"):
                         old_log_prob = self.actor_rollout_wg.compute_log_prob(batch)
@@ -1491,8 +1385,27 @@ class RayPPOTrainer:
                             values = self.critic_wg.compute_values(batch)
                             batch = batch.union(values)
 
-                    with marked_timer("adv_s1", timing_raw, color="brown"):
+                    with marked_timer("adv", timing_raw, color="brown"):
+                        # we combine with rule-based rm
+                        reward_extra_infos_dict: dict[str, list]
+                        if self.config.reward_model.launch_reward_fn_async:
+                            reward_tensor, reward_extra_infos_dict = ray.get(future_reward)
+                        batch.batch["token_level_scores"] = reward_tensor
+
+                        if reward_extra_infos_dict:
+                            batch.non_tensor_batch.update({k: np.array(v) for k, v in reward_extra_infos_dict.items()})
+
+                        # compute rewards. apply_kl_penalty if available
+                        if self.config.algorithm.use_kl_in_reward:
+                            batch, kl_metrics = apply_kl_penalty(
+                                batch, kl_ctrl=self.kl_ctrl_in_reward, kl_penalty=self.config.algorithm.kl_penalty
+                            )
+                            metrics.update(kl_metrics)
+                        else:
+                            batch.batch["token_level_rewards"] = batch.batch["token_level_scores"]
+
                         # compute advantages, executed on the driver process
+
                         norm_adv_by_std_in_grpo = self.config.algorithm.get(
                             "norm_adv_by_std_in_grpo", True
                         )  # GRPO adv normalization factor

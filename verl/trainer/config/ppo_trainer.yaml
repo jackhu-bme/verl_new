@@ -120,7 +120,15 @@ custom_reward_function:
   name: compute_score
 
 # config for the algorithm
+
 algorithm:
+
+  # for dynamic sampling
+  filter_groups:
+    _target_: verl.trainer.config.FilterGroupsConfig
+    enable: False # We try to avoid forgetting to set enable
+    metric: null # acc / score / seq_reward / seq_final_reward / ...
+    max_num_gen_batches: 0 # Non-positive values mean no upper limit
 
   # Required when using verl.utils.omega_conf_to_dataclass to instantiate dataclass configs in the entrypoint
   _target_: verl.trainer.config.AlgoConfig
