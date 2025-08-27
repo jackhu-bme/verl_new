@@ -27,24 +27,9 @@ def convert_row(row: dict, split_name: str) -> dict:
         "data_source": "cxr_crop",
         "prompt": [
             {   "role": "system", 
-                "content": "You are an experienced radiologist. You are given a question and you need to solve it step by step. "
-                            "Reasoning step by step before any tool call. "
-                            "You should answer in two steps: 1) [stage 1] First, conduct only one time tool_call of crop_image (need to pass the image index and crop coordinates, follow the format provided later)"
-                            "2) [stage 2] Second, Based on the original image and crooped image, think about the reasoning process as an internal monologue and then provide the final answer. "
-                            "The reasoning process MUST BE enclosed within <think> </think> tags. "
-                            "The final answer MUST be put in \\boxed{}. Answer in English, using only 'yes' or 'no'. No other words. "
-                            "Example whole process for image index -1: "
-                            "<tool_call>\n{'name': 'crop_image', 'arguments':{'index': -1, 'coordinates': '[100, 200, 120, 230]'}}</tool_call>"
-                            f"you should repeat the image index: {seed} for the index parameter, or you fail totally."
-                            "then the coordniates should be in the format of [x1, y1, x2, y2] where (x1, y1) is the top-left corner and (x2, y2) is the bottom-right corner. "
-                            "the croppind region is based on your coorinates of the original image, "
-                            f"To get a clearer view of x-ray, make this only one cropping region related to your final diagnosis of disease: {disease}. "
-                            "then the tool call will give you some results and hints. Only after this, you can say:"
-                            "<think>I see signs of pneumonia in the lung fields. </think>. My answer: \\boxed{yes}."
-                            "Your ultimate goal is to diagnosis after the valid tool use, the thinking process is to serve them, and you can answer after you think well."
-                            "Your diagnosis after tool use can be either yes or no. Now start with your tool use first."
+                "content": "You are a helpful assistant."
             },
-            {"role": "user", "content": prompt_text}
+            {"role": "user", "content": "First describe what you see in this image: <image>. Be detailed as possible."}
         ],
         "images": [img_dict],
         "ability": "chest_xray",
@@ -65,16 +50,6 @@ def convert_row(row: dict, split_name: str) -> dict:
     }
 
 
-# "tools_kwargs": {
-#     "calc_gsm8k_reward": {
-#         "create_kwargs": {"ground_truth": solution},
-#         # "execute_kwargs": {},
-#         # "calc_reward_kwargs": {},
-#         # "release_kwargs": {},
-#     },
-# },
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # local
@@ -85,10 +60,10 @@ if __name__ == "__main__":
 
     # cp -r /mnt/input/ms_cxr_data/cxr_mini_crop/* ~/verl_new/cxr_mini_crop/
 
-    parser.add_argument("--full_parquet", default="~/verl_new/cxr_mini_crop/full.parquet")
-    parser.add_argument("--train_parquet", default="~/verl_new/cxr_mini_crop/train.parquet")
-    parser.add_argument("--test_parquet", default="~/verl_new/cxr_mini_crop/test.parquet")
-    parser.add_argument("--local_dir", default="~/data/cxr_mini_tool")
+    parser.add_argument("--full_parquet", default="~/verl_new/cxr_data_process/ms_cxr_data/full.parquet")
+    parser.add_argument("--train_parquet", default="~/verl_new/cxr_data_process/mimic_cxr_jpg_data/fold_data/fold0/fold0_train_subset_5000_parquet.parquet")
+    parser.add_argument("--test_parquet", default="~/verl_new/cxr_data_process/ms_cxr_data/ms_cxr_all.parquet")
+    parser.add_argument("--local_dir", default="~/data/cxr_5k_tool")
     parser.add_argument("--hdfs_dir", default=None)
     parser.add_argument("--num_proc", type=int, default=os.cpu_count() // 2,
                         help="Number of parallel processes for image encoding")
@@ -139,8 +114,8 @@ if __name__ == "__main__":
     # Save parquet
     # -------------------------
     os.makedirs(args.local_dir, exist_ok=True)
-    pd.DataFrame(train_data).to_parquet(os.path.join(args.local_dir, "train.parquet"))
-    pd.DataFrame(test_data).to_parquet(os.path.join(args.local_dir, "test.parquet"))
+    pd.DataFrame(train_data).to_parquet(os.path.join(args.local_dir, "train_debug_describe.parquet"))
+    pd.DataFrame(test_data).to_parquet(os.path.join(args.local_dir, "test_debug_describe.parquet"))
 
     # -------------------------
     # Optional HDFS upload
