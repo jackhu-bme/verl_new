@@ -1369,6 +1369,9 @@ class RayPPOTrainer:
                         # 计算序列级 metric（numpy 便于聚合）
                         if metric_name == "seq_final_reward":
                             seq_metric = batch.batch["token_level_rewards"].sum(dim=-1).cpu().numpy()
+                        elif metric_name == "seq_final_reward_bool":
+                            bool_reward = (batch.batch["token_level_rewards"] > 0.5).float()
+                            seq_metric = bool_reward.sum(dim=-1).cpu().numpy()
                         elif metric_name == "seq_reward":
                             seq_metric = batch.batch["token_level_scores"].sum(dim=-1).cpu().numpy()
                         else:
