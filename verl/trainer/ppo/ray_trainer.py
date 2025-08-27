@@ -1439,6 +1439,10 @@ class RayPPOTrainer:
 
                     if self.config.trainer.balance_batch:
                         self._balance_batch(batch, metrics=metrics)
+
+                    # compute global_valid tokens
+                    batch.meta_info["global_token_num"] = torch.sum(batch.batch["attention_mask"], dim=-1).tolist()
+
                     
                     # recompute old_log_probs
                     with marked_timer("old_log_prob", timing_raw, color="blue"):
