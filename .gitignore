@@ -128,3 +128,5 @@ outputs
 .history
 
 cxr_data_process/ms_cxr_images/
+
+generations/
