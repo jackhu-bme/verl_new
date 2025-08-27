@@ -8,9 +8,9 @@ path_columns = ['img_original_path', 'img_256_path', 'img_vis_path']
 
 # 替换路径前缀
 for col in path_columns:
-    df[col] = df[col].str.replace('/mnt/input/ms_cxr_data', '/home/yqh/Qwen2.5-VL/datasets', regex=False)
+    df[col] = df[col].str.replace('/mnt/input/ms_cxr_data', '~/ms_cxr_data', regex=False)
 
 # 保存为新的 Parquet 文件
 df.to_parquet('~/verl_new/cxr_mini_crop/full_local.parquet', index=False)
 
-print("路径替换完成，保存为 full_replaced.parquet")
+print("路径替换完成，保存为 full_local.parquet")
