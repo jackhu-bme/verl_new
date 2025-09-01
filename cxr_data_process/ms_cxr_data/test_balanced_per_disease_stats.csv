@@ -1,0 +1,9 @@
+disease,final_pos,final_neg
+Cardiomegaly,379,379
+Consolidation,195,195
+Edema,326,326
+Lung Lesion,32,32
+Lung Opacity,542,542
+Pleural Effusion,618,618
+Pneumonia,324,324
+Pneumothorax,323,323

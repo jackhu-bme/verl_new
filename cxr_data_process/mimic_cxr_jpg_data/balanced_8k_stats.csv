@@ -1,0 +1,9 @@
+disease,pos_available,neg_available,cap_per_side,used_each_side
+Atelectasis,48538,1593,500,500
+Cardiomegaly,47392,16306,500,500
+Consolidation,11401,8409,500,500
+Edema,29121,25913,500,500
+Lung Opacity,54394,3046,500,500
+Pleural Effusion,57302,27552,500,500
+Pneumonia,17000,24265,500,500
+Pneumothorax,10976,44760,500,500

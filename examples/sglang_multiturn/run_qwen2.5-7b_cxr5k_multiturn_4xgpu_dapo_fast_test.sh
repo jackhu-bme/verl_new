@@ -74,4 +74,4 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.multi_turn.max_user_turns=1 \
     $@
 
-# python train_nv.py
+python train_nv.py
