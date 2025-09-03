@@ -10,7 +10,7 @@ CONFIG_PATH="$PROJECT_DIR/examples/sglang_multiturn/config"
 
 # TODO: check this parameter here: data.return_multi_modal_inputs
 
-VERSION="7.0.4"
+VERSION="7.0.6"
 DATASET="cxr_8k_bal_tool"
 MODEL="qwen2.5-vl-7b-instruct"
 DESCRIPTION="dapo_second_try_full_test"
