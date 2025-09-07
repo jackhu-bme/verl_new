@@ -4,8 +4,9 @@ import json
 import pandas as pd
 import matplotlib.pyplot as plt
 
-rollout_dir = "/home/aiscuser/verl_new/generations/cxr_5k_tool_qwen2.5-vl-7b-instruct_7.0.2_dapo_first_try/rollout"
-name = "dapo"
+# rollout_dir = "/home/aiscuser/verl_new/generations/cxr_5k_tool_qwen2.5-vl-7b-instruct_7.0.2_dapo_first_try/rollout"
+rollout_dir = "/home/aiscuser/verl_new/generations/cxr_8k_bal_tool_qwen2.5-vl-7b-instruct_7.0.6_dapo_second_try_full_test/rollout"
+name = "dapo_8k"
 
 results = []
 

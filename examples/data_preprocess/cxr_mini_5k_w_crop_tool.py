@@ -37,7 +37,7 @@ def convert_row(row: dict, split_name: str) -> dict:
                             "<tool_call>\n{'name': 'crop_image', 'arguments':{'index': -1, 'coordinates': '[106, 163, 128, 237]'}}</tool_call>"
                             f"you should repeat the image index: {seed} for the index parameter, or you fail totally."
                             "remember to use <tool_call>...</tool_call> to surround your tool call json object, or it can not be recognized. "
-                            "these coordinates are just examples, you should choose based on the need for your final diagnosis of disease: {disease}. "
+                            f"these coordinates are just examples, you should choose based on the need for your final diagnosis of disease: {disease}. "
                             "then the coordniates should be in the format of [x1, y1, x2, y2] where (x1, y1) is the top-left corner and (x2, y2) is the bottom-right corner. "
                             "the croppind region is based on your coorinates of the original image, "
                             f"To get a clearer view of x-ray, make this only one cropping region related to your final diagnosis of disease: {disease}. "

@@ -774,6 +774,8 @@ class RayPPOTrainer:
         sample_scores = []
         sample_turns = []
 
+        print(f"start validation!")
+
         # breakpoint()
         
         # TODO: this code can be optimized to auto find and create disease list
@@ -1279,6 +1281,8 @@ class RayPPOTrainer:
                 gen_batch = gen_batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n, interleave=True)
 
                 is_last_step = self.global_steps >= self.total_training_steps
+
+                # breakpoint()
 
                 with marked_timer("step", timing_raw):
                     # generate a batch
