@@ -782,6 +782,8 @@ class RayPPOTrainer:
         disease_list = ['Atelectasis', 'Cardiomegaly', 'Consolidation', 'Edema', 'Lung Opacity', 'Pleural Effusion', 'Pneumonia', 'Pneumothorax']
         disease_counts = np.zeros((len(disease_list), 2, 3)) # 2 for groung_truth yes/no, 3 for answer yes/no/other
 
+        # breakpoint()
+
         for test_data in self.val_dataloader:
             test_batch = DataProto.from_single_dict(test_data)
 
@@ -821,8 +823,8 @@ class RayPPOTrainer:
                 "eos_token_id": self.tokenizer.eos_token_id,
                 "pad_token_id": self.tokenizer.pad_token_id,
                 "recompute_log_prob": False,
-                "do_sample": self.config.actor_rollout_ref.rollout.val_kwargs.do_sample,
-                "validate": True,
+                # "do_sample": self.config.actor_rollout_ref.rollout.val_kwargs.do_sample,
+                # "validate": True,
             }
             print(f"test_gen_batch meta info: {test_gen_batch.meta_info}")
 

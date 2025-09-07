@@ -673,6 +673,7 @@ class SGLangRollout(BaseRollout):
 
         do_sample = prompts.meta_info.get("do_sample", True)
         is_validate = prompts.meta_info.get("validate", False)
+        # breakpoint()
 
         # Create request-level sampling parameters
         request_sampling_params = self.sampling_params.copy()
@@ -801,6 +802,7 @@ class SGLangRollout(BaseRollout):
         user_turn_rewards = []
 
         # Create request-level sampling parameters
+        breakpoint()
         request_sampling_params = self.sampling_params.copy()
         if not do_sample:
             request_sampling_params.update(
