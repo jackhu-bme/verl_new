@@ -1,0 +1,9 @@
+disease,pos_available,neg_available,need_per_side,used_each_side
+Atelectasis,38568,1249,3125,1249
+Cardiomegaly,37620,12798,3125,3125
+Consolidation,8979,6638,3125,3125
+Edema,23057,20459,3125,3125
+Lung Opacity,43467,2347,3125,2347
+Pleural Effusion,45563,21679,3125,3125
+Pneumonia,13613,19129,3125,3125
+Pneumothorax,8749,35389,3125,3125

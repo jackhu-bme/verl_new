@@ -1,0 +1,9 @@
+disease,pos_from_alignment,neg_added_from_remained,final_each_side_target,final_pos,final_neg
+Atelectasis,49,49,49,49,49
+Cardiomegaly,151,151,151,151,151
+Consolidation,78,78,78,78,78
+Edema,52,52,52,52,52
+Lung Opacity,70,70,70,70,70
+Pleural Effusion,135,135,135,135,135
+Pneumonia,204,204,204,204,204
+Pneumothorax,255,255,255,255,255
