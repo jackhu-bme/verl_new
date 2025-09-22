@@ -88,10 +88,10 @@ if __name__ == "__main__":
 
     # cp -r /mnt/input/ms_cxr_data/cxr_mini_crop/* ~/verl_new/cxr_mini_crop/
 
-    parser.add_argument("--full_parquet", default="~/verl_new/cxr_data_process/ms_cxr_data/full.parquet")
-    parser.add_argument("--train_parquet", default="~/verl_new/cxr_data_process/mimic_cxr_jpg_data/fold_data/fold0/fold0_train_subset_5000_parquet.parquet")
-    parser.add_argument("--test_parquet", default="~/verl_new/cxr_data_process/ms_cxr_data/ms_cxr_all.parquet")
-    parser.add_argument("--local_dir", default="~/data/cxr_5k_tool")
+    parser.add_argument("--full_parquet", default="~/verl_new/cxr_mini_crop/full_local.parquet")
+    parser.add_argument("--train_parquet", default="~/verl_new/cxr_mini_crop/train.parquet")
+    parser.add_argument("--test_parquet", default="~/verl_new/cxr_mini_crop/test.parquet")
+    parser.add_argument("--local_dir", default="~/data/cxr_mini_1k_tool")
     parser.add_argument("--hdfs_dir", default=None)
     parser.add_argument("--num_proc", type=int, default=os.cpu_count() // 2,
                         help="Number of parallel processes for image encoding")
