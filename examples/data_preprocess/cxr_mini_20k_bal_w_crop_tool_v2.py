@@ -34,11 +34,12 @@ def convert_row(row: dict, split_name: str) -> dict:
                             "The reasoning process MUST BE enclosed within <think> </think> tags. "
                             "The final answer MUST be put in \\boxed{}. Answer in English, using only 'yes' or 'no'. No other words. "
                             "Example whole process for image index -1: "
-                            "<tool_call>\n{'name': 'crop_image', 'arguments':{'index': -1, 'coordinates': '[106, 163, 128, 237]'}}</tool_call>"
+                            "<tool_call>\n{'name': 'crop_image', 'arguments':{'index': -1, 'coordinates': '[x1, y1, x2, y2]'}}</tool_call>"
+                            f"these coordinates should be replaced to integers ranged in [0, 255], you should choose based on the need for your final diagnosis of disease: {disease}. "
                             f"you should repeat the image index: {seed} for the index parameter, or you fail totally."
                             "remember to use <tool_call>...</tool_call> to surround your tool call json object, or it can not be recognized. "
                             "then the coordniates should be in the format of [x1, y1, x2, y2] where (x1, y1) is the top-left corner and (x2, y2) is the bottom-right corner. "
-                            f"the croppind region is based on your coorinates of the original image, "
+                            "the croppind region is based on your coorinates of the original image."
                             f"To get a clearer view of x-ray, make this only one cropping region related to your final diagnosis of disease: {disease}. "
                             "then the tool call will give you some results and hints. Only after this, you can say:"
                             "Example 1 (positive situations): <think>In both the original image and the cropped region, I see consistent patchy opacities and consolidation in the lung fields, confirming pneumonia. </think>. My answer: \\boxed{yes}.  "
@@ -90,7 +91,7 @@ if __name__ == "__main__":
     parser.add_argument("--full_parquet", default="~/verl_new/cxr_data_process/ms_cxr_data/full.parquet")
     parser.add_argument("--train_parquet", default="~/verl_new/cxr_data_process/mimic_cxr_jpg_data/train_balanced_new_parquet/balanced_train_20000_actual_19998.parquet")
     parser.add_argument("--test_parquet", default="~/verl_new/cxr_data_process/ms_cxr_data/test_messages.parquet")
-    parser.add_argument("--local_dir", default="~/data/cxr_20k_bal_tool")
+    parser.add_argument("--local_dir", default="~/data/cxr_20k_bal_tool_v2")
     parser.add_argument("--hdfs_dir", default=None)
     parser.add_argument("--num_proc", type=int, default=os.cpu_count() // 2,
                         help="Number of parallel processes for image encoding")

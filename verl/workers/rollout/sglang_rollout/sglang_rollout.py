@@ -704,6 +704,7 @@ class SGLangRollout(BaseRollout):
                 }
             )
 
+        # request_sampling_params["temperature"] = 0 # debug only
         # Update with any additional kwargs
         request_sampling_params.update(kwargs)
 
