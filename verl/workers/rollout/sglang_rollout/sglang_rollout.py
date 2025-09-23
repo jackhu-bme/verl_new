@@ -673,7 +673,6 @@ class SGLangRollout(BaseRollout):
 
         do_sample = prompts.meta_info.get("do_sample", True)
         is_validate = prompts.meta_info.get("validate", False)
-        # breakpoint()
 
         # Create request-level sampling parameters
         request_sampling_params = self.sampling_params.copy()
@@ -703,8 +702,7 @@ class SGLangRollout(BaseRollout):
                     "n": 1,  # if validate, already repeat in ray_trainer
                 }
             )
-
-        # request_sampling_params["temperature"] = 0 # debug only
+        
         # Update with any additional kwargs
         request_sampling_params.update(kwargs)
 
@@ -831,6 +829,10 @@ class SGLangRollout(BaseRollout):
                     "n": 1,  # if validate, already repeat in ray_trainer
                 }
             )
+        
+        request_sampling_params["skip_special_tokens"] = True
+        request_sampling_params["spaces_between_special_tokens"] = True
+        # request_sampling_params["temperature"] = 1 # debug only
 
         # Update with any additional kwargs
         request_sampling_params.update(kwargs)
