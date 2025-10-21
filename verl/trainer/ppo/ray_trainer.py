@@ -1234,6 +1234,8 @@ class RayPPOTrainer:
         accum_kept_prompts_total = 0
         accum_discarded_prompts_total = 0
 
+        # breakpoint()
+
         for epoch in range(self.config.trainer.total_epochs):
             for batch_dict in self.train_dataloader:
                 do_profile = (
@@ -1340,6 +1342,8 @@ class RayPPOTrainer:
                         else:
                             reward_tensor, reward_extra_infos_dict = compute_reward(batch, self.reward_fn)
 
+                    
+
                     # recompute old_log_probs
                     with marked_timer("old_log_prob", timing_raw, color="blue"):
                         old_log_prob = self.actor_rollout_wg.compute_log_prob(batch)
@@ -1391,89 +1395,8 @@ class RayPPOTrainer:
                             values = self.critic_wg.compute_values(batch)
                             batch = batch.union(values)
 
-                    # ===== DAPO: accumulate diverse prompts before update (NO step increment until update) =====
-                    use_dapo = bool(self.config.algorithm.get("filter_groups", {}).get("enable", False))
-                    if use_dapo:
-                        # 1) 解析配置
-                        fg_cfg = self.config.algorithm.filter_groups
-                        metric_name = fg_cfg.metric
-                        prompt_bsz_required = int(self.config.data.train_batch_size)
-                        rollout_n = int(self.config.actor_rollout_ref.rollout.n)
-                        traj_bsz_required = prompt_bsz_required * rollout_n
-                        max_ngb = int(fg_cfg.get("max_num_gen_batches", 0) or 0)  # 0 => infinite
-
-                        # 2) 把当前 new_batch 的 metric 填好（如需从 reward 汇总获得）
-                        #    注意：此时你已经有 new_batch.batch["token_level_scores"]/["token_level_rewards"]
-                        if metric_name == "seq_final_reward":
-                            batch.non_tensor_batch["seq_final_reward"] = (
-                                batch.batch["token_level_rewards"].sum(dim=-1).detach().cpu().numpy()
-                            )
-                        elif metric_name == "seq_reward":
-                            batch.non_tensor_batch["seq_reward"] = (
-                                batch.batch["token_level_scores"].sum(dim=-1).detach().cpu().numpy()
-                            )
-                        # 3) 以 prompt uid 分组，过滤“组内该 metric 全一致”的 prompts（std==0 且组内>1）
-
-
-                        if metric_name in batch.non_tensor_batch:
-                            prompt_uid2vals = defaultdict(list)
-                            for uid, val in zip(batch.non_tensor_batch["uid"], batch.non_tensor_batch[metric_name]):
-                                prompt_uid2vals[uid].append(val)
-
-                            kept_prompt_uids = [
-                                uid for uid, vals in prompt_uid2vals.items()
-                                if (np.std(vals) > 0) or (len(vals) == 1)
-                            ]
-                            disc_cnt = len(prompt_uid2vals) - len(kept_prompt_uids)
-                            kept_set = set(kept_prompt_uids)
-                            kept_traj_idxs = [
-                                i for i, uid in enumerate(batch.non_tensor_batch["uid"]) if uid in kept_set
-                            ]
-                            batch_kept = batch[kept_traj_idxs]
-                        else:
-                            # metric 不存在：退化为不过滤
-                            disc_cnt = 0
-                            batch_kept = batch
-
-                        # 4) 累加到跨迭代缓存 acc_batch
-                        acc_batch = batch_kept if acc_batch is None else DataProto.concat([acc_batch, batch_kept])
-                        # 统计当前累积到的“独立 prompt 数量”
-                        uniq_prompts = np.unique(acc_batch.non_tensor_batch["uid"])
-                        num_prompt_in_acc = len(uniq_prompts)
-
-                        # 记录累计统计（仅在真正 update 的那一次上报）
-                        accum_tries += 1
-                        accum_kept_prompts_total += len(np.unique(batch_kept.non_tensor_batch["uid"]))
-                        accum_discarded_prompts_total += disc_cnt
-
-                        # 5) 如果还不够，就跳到下一次 dataloader 迭代“继续生成/筛选/累积”
-                        if num_prompt_in_acc < prompt_bsz_required:
-                            if (max_ngb > 0) and (accum_tries >= max_ngb):
-                                raise ValueError(
-                                    f"DAPO: Not enough diverse prompts after {accum_tries} tries "
-                                    f"(required={prompt_bsz_required}, got={num_prompt_in_acc}). "
-                                    f"Increase diversity or set max_num_gen_batches=0."
-                                )
-                            # —— 关键：此处“直接 continue 到下一次 for batch_dict in dataloader”。
-                            # —— 不递增 global_steps，不更新进度条，也不触发 validation/save。
-                            continue
-                        else:
-                            # 凑齐了：裁齐为整齐的“轨迹 batch”尺寸
-                            batch = acc_batch[:traj_bsz_required]
-                            # 将累积指标写进 metrics（将在本次真正 update 的 step 一起上报）
-                            metrics["dapo/accum_tries"] = accum_tries
-                            metrics["dapo/accum_kept_prompts_total"] = accum_kept_prompts_total
-                            metrics["dapo/accum_discarded_prompts_total"] = accum_discarded_prompts_total
-                            metrics["dapo/accum_uid_unique"] = int(num_prompt_in_acc)
-                            # reset 累积状态（下一次 step 重新累积）
-                            acc_batch = None
-                            accum_tries = 0
-                            accum_kept_prompts_total = 0
-                            accum_discarded_prompts_total = 0
-                    # ===== END DAPO accumulate =====
-
                     
-                    with marked_timer("adv", timing_raw, color="brown"):
+                    with marked_timer("adv_reward", timing_raw, color="brown"):
                         # we combine with rule-based rm
                         reward_extra_infos_dict: dict[str, list]
                         if self.config.reward_model.launch_reward_fn_async:
@@ -1491,6 +1414,96 @@ class RayPPOTrainer:
                             metrics.update(kl_metrics)
                         else:
                             batch.batch["token_level_rewards"] = batch.batch["token_level_scores"]
+                    
+                    with marked_timer("dapo", timing_raw, color="teal"):
+                        # ===== DAPO: accumulate diverse prompts AFTER reward/kl (NO step increment until update) =====
+                        use_dapo = bool(self.config.algorithm.get("filter_groups", {}).get("enable", False))
+                        if use_dapo:
+                            fg_cfg = self.config.algorithm.filter_groups
+                            metric_name = fg_cfg.metric
+                            prompt_bsz_required = int(self.config.data.train_batch_size)
+                            rollout_n = int(self.config.actor_rollout_ref.rollout.n)
+                            traj_bsz_required = prompt_bsz_required * rollout_n
+                            max_ngb = int(fg_cfg.get("max_num_gen_batches", 0) or 0)  # 0 => infinite
+
+                            # 1) 绑定当前 batch 的度量（来自 token 级别的 reward/scores）
+                            #    这里 batch 已有：batch.batch["token_level_scores"], 若 use_kl_in_reward 则也有 token_level_rewards
+                            if metric_name == "seq_final_reward":
+                                batch.non_tensor_batch["seq_final_reward"] = (
+                                    batch.batch["token_level_rewards"].sum(dim=-1).detach().cpu().numpy()
+                                )
+                            elif metric_name == "seq_reward":
+                                batch.non_tensor_batch["seq_reward"] = (
+                                    batch.batch["token_level_scores"].sum(dim=-1).detach().cpu().numpy()
+                                )
+                            elif metric_name == "seq_final_reward_bool":
+                                batch.non_tensor_batch["seq_final_reward_bool"] = (
+                                    (batch.batch["token_level_rewards"].sum(dim=-1) > 0.5).detach().cpu().numpy()
+                                )
+
+                            # 2) 以 prompt uid 聚合，丢弃组内 metric 全一致的 prompts（std==0 且组内>1）
+
+                            if metric_name in batch.non_tensor_batch:
+                                prompt_uid2vals = defaultdict(list)
+                                for uid, val in zip(batch.non_tensor_batch["uid"], batch.non_tensor_batch[metric_name]):
+                                    prompt_uid2vals[uid].append(val)
+
+                                kept_prompt_uids = [
+                                    uid for uid, vals in prompt_uid2vals.items()
+                                    if (np.std(vals) > 0) or (len(vals) == 1)
+                                ]
+                                disc_cnt = len(prompt_uid2vals) - len(kept_prompt_uids)
+                                kept_set = set(kept_prompt_uids)
+                                kept_traj_idxs = [
+                                    i for i, uid in enumerate(batch.non_tensor_batch["uid"]) if uid in kept_set
+                                ]
+                                batch_kept = batch[kept_traj_idxs]
+                            else:
+                                # 没有该 metric：退化为不过滤
+                                disc_cnt = 0
+                                batch_kept = batch
+
+                            # 3) 跨迭代累积（关键：此时已包含 prompts/responses/attn 等，以及 token_level_* 与 uid）
+                            acc_batch = batch_kept if acc_batch is None else DataProto.concat([acc_batch, batch_kept])
+
+                            # 4) 统计累计的独立 prompt 数（按 uid 去重）
+                            uniq_prompts = np.unique(acc_batch.non_tensor_batch["uid"])
+                            num_prompt_in_acc = len(uniq_prompts)
+
+                            # 记录累计统计（等真正 update 时再一起上报）
+                            accum_tries += 1
+                            try:
+                                kept_uid_unique = len(np.unique(batch_kept.non_tensor_batch["uid"]))
+                            except Exception:
+                                kept_uid_unique = 0
+                            accum_kept_prompts_total += kept_uid_unique
+                            accum_discarded_prompts_total += disc_cnt
+
+                            # 5) 不够就继续下一次 dataloader 迭代：不递增 global_steps、不更新进度条、不触发验证/保存
+                            if num_prompt_in_acc < prompt_bsz_required:
+                                if (max_ngb > 0) and (accum_tries >= max_ngb):
+                                    raise ValueError(
+                                        f"DAPO: Not enough diverse prompts after {accum_tries} tries "
+                                        f"(required={prompt_bsz_required}, got={num_prompt_in_acc}). "
+                                        f"Increase diversity or set max_num_gen_batches=0."
+                                    )
+                                continue
+                            else:
+                                # 6) 凑够了，裁齐到整齐的“轨迹 batch”尺寸再进入后续 old_log_prob/ref/values/adv/update
+                                batch = acc_batch[:traj_bsz_required]
+                                metrics["dapo/accum_tries"] = accum_tries
+                                metrics["dapo/accum_kept_prompts_total"] = accum_kept_prompts_total
+                                metrics["dapo/accum_discarded_prompts_total"] = accum_discarded_prompts_total
+                                metrics["dapo/accum_uid_unique"] = int(num_prompt_in_acc)
+                                # reset 累积，用于下一次优化 step
+                                acc_batch = None
+                                accum_tries = 0
+                                accum_kept_prompts_total = 0
+                                accum_discarded_prompts_total = 0
+                        # ===== END DAPO accumulate =====
+                   
+                    
+                    with marked_timer("advantage", timing_raw, color="magenta"):
 
                         # compute advantages, executed on the driver process
 
