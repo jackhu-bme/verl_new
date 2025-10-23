@@ -1277,6 +1277,26 @@ class RayPPOTrainer:
                     non_tensor_batch_keys=non_tensor_batch_keys_to_pop,
                 )
 
+                if self.config.actor_rollout_ref.rollout.get("temperature_annealing", None) is not None:
+                    # after the start_steps, drop temperature linearly to final_temperature until final_steps
+                    temp_anneal_cfg = self.config.actor_rollout_ref.rollout.temperature_annealing
+                    if temp_anneal_cfg.start_steps < temp_anneal_cfg.final_steps:
+                        if self.global_steps >= temp_anneal_cfg.start_steps:
+                            if self.global_steps >= temp_anneal_cfg.final_steps:
+                                cur_temp = temp_anneal_cfg.final_temperature
+                            else:
+                                frac = (self.global_steps - temp_anneal_cfg.start_steps) / (
+                                    temp_anneal_cfg.final_steps - temp_anneal_cfg.start_steps
+                                )
+                                cur_temp = temp_anneal_cfg.initial_temperature + frac * (
+                                    temp_anneal_cfg.final_temperature - temp_anneal_cfg.initial_temperature
+                                )
+                            gen_batch.meta_info["temperature"] = cur_temp
+                            print(
+                                f"Step {self.global_steps}: temperature annealed to {cur_temp:.4f}"
+                            )
+                            metrics["training/temperature"] = cur_temp
+
                 # pass global_steps to trace
                 gen_batch.meta_info["global_steps"] = self.global_steps
                 gen_batch = gen_batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n, interleave=True)

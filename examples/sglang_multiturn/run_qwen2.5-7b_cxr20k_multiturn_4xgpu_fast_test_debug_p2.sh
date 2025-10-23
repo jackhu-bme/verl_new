@@ -42,10 +42,11 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
     actor_rollout_ref.rollout.n=2 \
     actor_rollout_ref.rollout.multi_turn.tokenization_sanity_check_mode="ignore_strippable" \
-    actor_rollout_ref.rollout.temperature_annealing.start_steps=1 \
+    actor_rollout_ref.rollout.temperature_annealing.start_steps=0 \
     actor_rollout_ref.rollout.temperature_annealing.final_steps=5 \
     actor_rollout_ref.rollout.temperature_annealing.initial_temperature=1.0 \
     actor_rollout_ref.rollout.temperature_annealing.final_temperature=0.5 \
+    actor_rollout_ref.rollout.multi_turn.tokenization_sanity_check_mode="ignore_strippable" \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=2 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     actor_rollout_ref.actor.clip_ratio_high=0.28 \
@@ -68,8 +69,8 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.ref.log_prob_max_token_len_per_gpu=8192 \
     critic.ppo_max_token_len_per_gpu=8192 \
     critic.forward_max_token_len_per_gpu=8192 \
-    data.train_files=$HOME/data/cxr_20k_bal_tool_v2_2_think/test_mini.parquet \
-    data.val_files=$HOME/data/cxr_20k_bal_tool_v2_2_think/test_mini.parquet \
+    data.train_files=$HOME/data/cxr_20k_bal_tool_v2/test_mini.parquet \
+    data.val_files=$HOME/data/cxr_20k_bal_tool_v2/test_mini.parquet \
     actor_rollout_ref.rollout.multi_turn.tool_config_path="$PROJECT_DIR/examples/sglang_multiturn/config/tool_config/cxr1k_tool_config.yaml" \
     actor_rollout_ref.rollout.multi_turn.max_user_turns=1 \
     $@
