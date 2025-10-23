@@ -17,13 +17,13 @@ def sample(input_path, output_path, n=20):
     print(f"保存完成: {output_path}")
 
 # 输入和输出路径
-# input_path_train = "/home/aiscuser/data/cxr_5k_tool/train.parquet"
-# output_path_train = "/home/aiscuser/data/cxr_5k_tool/train_mini.parquet"
+input_path_train = "/home/aiscuser/data/cxr_20k_bal_tool_v2/train.parquet"
+output_path_train = "/home/aiscuser/data/cxr_20k_bal_tool_v2/train_mini.parquet"
 
-# sample(input_path_train, output_path_train)
+sample(input_path_train, output_path_train, n=100)
 
 # test
-input_path_test = "/home/aiscuser/data/cxr_20k_bal_tool_v2_2_think/test.parquet"
-output_path_test = "/home/aiscuser/data/cxr_20k_bal_tool_v2_2_think/test_mini.parquet"
+# input_path_test = "/home/aiscuser/data/cxr_20k_bal_tool_v2_2_think/test.parquet"
+# output_path_test = "/home/aiscuser/data/cxr_20k_bal_tool_v2_2_think/test_mini.parquet"
 
-sample(input_path_test, output_path_test, n=100)
+# sample(input_path_test, output_path_test, n=100)

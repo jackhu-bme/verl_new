@@ -87,7 +87,7 @@ def tool_reward(predict_str: str) -> float:
 
 
 def compute_score(predict_str: str, ground_truth: str, use_boxed: bool = True, format_score: float = 0.1, tool_score: float = 0.1) -> float:
-    breakpoint()
+    # breakpoint()
     tool_r = tool_reward(predict_str)
     acc_r = acc_reward(predict_str, ground_truth, use_boxed)
     format_r = format_reward(predict_str)
