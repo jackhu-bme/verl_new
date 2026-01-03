@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--full_parquet", default="~/verl_new/cxr_data_process/ms_cxr_data/full.parquet")
     parser.add_argument("--train_parquet", default="~/verl_new/cxr_data_process/mimic_cxr_jpg_data/train_balanced_new_parquet/balanced_train_20000_actual_19998.parquet")
-    parser.add_argument("--test_parquet", default="~/verl_new/cxr_data_process/ms_cxr_data/test_messages.parquet")
+    parser.add_argument("--test_parquet", default="~/verl_new/cxr_data_process/ms_cxr_data/test_messages_val_v2_1530.parquet")
     parser.add_argument("--local_dir", default="~/data/cxr_20k_balanced")
     parser.add_argument("--hdfs_dir", default=None)
     parser.add_argument("--num_proc", type=int, default=os.cpu_count() // 2,

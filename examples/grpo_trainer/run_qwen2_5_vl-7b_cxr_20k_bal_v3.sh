@@ -37,7 +37,7 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='cxr_20k_bal_exps' \
+    trainer.project_name='cxr_20k_bal_exps_verl_rerun' \
     trainer.experiment_name='baseline_qwen2_5_vl_7b_20k_bal_v3.2_bs128' \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
